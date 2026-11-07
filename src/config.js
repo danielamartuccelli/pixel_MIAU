@@ -6,16 +6,8 @@ window.G = window.G || {};
 
 G.W = 400;           // resolución interna (pixel art) — se escala a la ventana
 G.H = 225;
-G.VERSION = '1.0.0';
+G.VERSION = '1.1.0';
 G.STORAGE_KEY = 'limaduo_v1';
-
-/* MODO MISMA LAPTOP (local.html): dos copias del juego (una por jugador) en iframes, unidas por postMessage.
-   ?local=1&slot=0|1&me=sebas|dani  — cada copia guarda aparte (así no se pisan) y el slot 1 no pone música (la pone el 0). */
-(function () {
-  const q = new URLSearchParams(location.search);
-  G.local = q.get('local') === '1'; G.slot = +q.get('slot') || 0;
-  if (G.local) G.STORAGE_KEY = 'limaduo_local_' + (q.get('me') || (G.slot ? 'dani' : 'sebas'));
-})();
 
 /* Fecha desde la que se cuenta "su tiempo juntos".
    El feliz "2 años y medio" cae el 11-nov-2026 => inicio = 11-may-2024. */
@@ -59,31 +51,34 @@ G.PLACES = {
   igloo:       { name: 'Igloo de Dani y Sebas', district: 'Nuestra base', music: 'lofi', scene: 'igloo', owner: 'both', pin: [64, 62] },
   casa_sebas:  { name: 'Casa de Sebas',      district: 'Miraflores', music: 'hiphop', scene: 'igloo', owner: 'sebas', pin: [228, 166] },
   kennedy:  { name: 'Parque Kennedy',      district: 'Miraflores', music: 'rock',   scene: 'kennedy', pin: [236, 200],
-              game: 'Carrera de gatos', desc: 'Corre como el dinosaurio de Google: salta gatos, agáchate ante las palomas y junta pescaditos. 2, 3 o 5 min. El ganador se lleva S/ 10 y un bubble tea (accesorio).' },
+              game: 'Carrera de gatos', desc: 'Corre como el dinosaurio de Google en el Parque Kennedy (con la tienda de churros Manolo\'s): salta gatos, agáchate ante las palomas y junta pescaditos. El ganador se lleva S/ 10 y un bubble tea.' },
   pollos:   { name: 'El Pollo Pier',       district: 'Miraflores', music: 'urbano', scene: 'pollos', pin: [244, 234], sign: ['EL POLLO', 'PIER', 'restaurant'],
               game: 'Memoria de pedidos', desc: 'Solo cerveza y salchipapas… ¡pero el bar se llena! Recuerda cada pedido (la burbuja se apaga), planea tus viajes y gasta bien tu libreta. Mismos clientes para los dos: gana el mayor puntaje (S/ 10).' },
   pucp:     { name: 'PUCP',                district: 'San Miguel', music: 'lofi',   scene: 'pucp', pin: [238, 86],
               game: 'Esconderse', desc: 'Escóndanse en la Facultad de Letras, el Tontódromo y el pasto sin que los vea el guardia ni el estudiante. 3, 5 o 7 rondas. Gana quien sea visto menos veces (S/ 10).' },
-  cocina:   { name: 'Cocina de Daniela',   district: 'Lince',      music: 'reggaeton', scene: 'cocina', pin: [334, 106],
+  cocina:   { name: 'Cocina de Daniela',   district: 'Lince',      music: 'rapido', scene: 'cocina', pin: [334, 106],
               game: 'Los Ccellis · ramen cooperativo', desc: 'Overcooked de ramen en equipo: 5 niveles cuya cocina cambia (¡hasta se divide!). Si lo logran, el premio son los fideos Martuccini para compartir.' },
   salsa:    { name: 'Academia Saoco',      district: 'Lince',      music: 'salsa',  scene: 'saoco', pin: [352, 126],
               game: 'Baile de flechas', desc: 'Disco de Club Penguin con salsa, habanera y charanga: solitario (VS yo, contra tu récord) o en dupla contra dos duplas NPC: si uno se equivoca, ¡los dos repiten la frase!' },
-  carjitsu: { name: 'Dojo de San Martín',  district: 'San Martín de Porres', music: 'lofi', scene: 'cardjitsu', pin: [244, 20],
+  carjitsu: { name: 'Dojo de San Martín',  district: 'San Martín de Porres', music: 'oriental', scene: 'cardjitsu', pin: [244, 20],
               game: 'Card-jitsu', desc: 'Duelo de cartas estilo Avatar: Fuego, Agua, Tierra y Aire. Los dos juegan en secreto y se revelan juntas; usa tu Chi ⚡ en el momento justo. El ganador se lleva S/ 10 y los bufandas se guardan para siempre.' },
-  callao:   { name: 'Playa del Callao',    district: 'Callao',     music: 'rock',   scene: 'callao', pin: [176, -32],
-              game: 'Piedra, Frío y Resistencia', desc: 'Pelea 1 contra 1 con barra de vida y de temperatura (hipotermia): lanza piedras, golpea en combo y no te quedes quieto. Mejor de 3 rondas, con traje de baño. El ganador: S/ 10 y foto vintage.' },
-  yuyos:    { name: 'Los Yuyos',           district: 'Barranco',   music: 'lofi',   scene: 'yuyos', pin: [216, 280],
-              game: 'Duelo de Canillitas de Chapa', desc: 'Tres pruebas: aguantar el chapuzón, equilibrio sobre piedras resbalosas con chamarra pesada y pulso con la piedra más pesada. El rey de la playa: S/ 10 y foto vintage.' }
+  callao:   { name: 'Playa del Callao',    district: 'Callao',     music: 'rock',   scene: 'callao', pin: [124, 30],
+              game: 'Piedra, Frío y Resistencia', desc: 'Pelea 1 contra 1: lanza piedras y golpea, pero ¡el agua es helada! Si tu temperatura llega a 0 (hipotermia) PIERDES la ronda. Mejor de 3. El ganador: S/ 10 y foto vintage.' },
+  yuyos:    { name: 'Los Yuyos',           district: 'Barranco',   music: 'lofi',   scene: 'yuyos', pin: [208, 266],
+              game: 'Duelo de Canillitas de Chapa', desc: 'Tres pruebas: chapuzón, equilibrio sobre piedras resbalosas con chamarra pesada y pulso con la piedra más pesada. El rey de la playa: S/ 10 y foto vintage.' },
+  olivar:   { name: 'El Olivar',           district: 'San Isidro', music: 'lofi',   scene: 'olivar', pin: [270, 118],
+              game: 'Mirada fija (en la banquita)', desc: 'Parque libre para pasear. De noche hay luna llena. En la banquita: mirarse a los ojos sin pestañear: ¡quien pestañea primero pierde! (S/ 10)' }
 };
 G.BASE = 'igloo';
 
 /* Qué "estilo" de música suena en cada lugar (ver audio.js) */
 G.MUSIC_FOR = { title: 'lofi', story: 'lofi', map: 'lofi', conecta4: 'lofi', fin: 'salsa' };
 
-/* Emotes: id -> etiqueta */
+/* Emoticones: id -> etiqueta (teclas 1–9 para los primeros nueve) */
 G.EMOTES = [
-  ['heart', 'Corazón'], ['penguin', 'Pingüino'], ['rock', 'Roca'], ['laugh', 'Risa'],
-  ['star', 'Estrella'], ['wave', 'Hola'], ['dance', 'Baile']
+  ['heart', 'Corazón'], ['laugh', 'Risa'], ['angry', 'Cara molesta'], ['sad', 'Cara triste con lágrimas'], ['serious', 'Cara seria'],
+  ['mute', 'Cara muda'], ['question', 'Signo de interrogación'], ['redflag', 'Red flag'],
+  ['penguin', 'Pingüino'], ['star', 'Estrella'], ['rock', 'Roca'], ['wave', 'Hola'], ['dance', 'Baile']
 ];
 
 /* Bus de eventos muy simple */

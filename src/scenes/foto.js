@@ -65,7 +65,8 @@
       [[40, 140], [250, 150], [210, 160]].forEach(([x, y]) => G.beach.stone(g, P.x + x, P.y + y, 5));
       const who = id => 'beach_id_' + id, sp = (id, x, y, sc, frame, flip) => add(this.add.sprite(P.x + x, P.y + y, who(id), frame).setOrigin(0.5, 1).setScale(sc).setFlipX(!!flip).setDepth(12));
       const winner = this.w, loser = G.IDS[this.w].other, me = G.state.me;
-      const puf = (id, x, y) => { const key = id === me.id ? 'puf_me' : 'puf_partner'; if (this.textures.exists(key)) add(this.add.image(P.x + x, P.y + y, key).setOrigin(0.5, 1).setScale(1.5).setDepth(11)); };
+      const puf = (id, x, y) => { const key = id === me.id ? 'puf_me' : 'puf_partner'; if (this.textures.exists(key)) add(this.add.image(P.x + x, P.y + y, key).setOrigin(0.5, 1).setScale(1.5).setDepth(11));
+        const lk = id === me.id ? me.look : (G.state.partner || {}).look; if (lk && lk.lala && this.textures.exists('lala_sit')) add(this.add.image(P.x + x + (x < 144 ? -26 : 26), P.y + y, 'lala_sit').setOrigin(0.5, 1).setScale(1.1).setDepth(11)); };
       if (k === 0) { sp('sebas', 128, 160, 3, 'l0', true); sp('dani', 160, 160, 3, 'l0', false); const h = add(this.add.graphics().setDepth(14)); A.heart(h, P.x + 144, P.y + 52, 12, 0xff3d7f); puf('sebas', 60, 162); puf('dani', 232, 162); }
       else if (k === 1) { sp('sebas', 126, 160, 3, 'l0', false); sp('dani', 160, 160, 3, 'l0', true); puf('sebas', 56, 162); puf('dani', 236, 162); [[70, 50], [215, 56]].forEach(([x, y]) => { const h = add(this.add.graphics().setDepth(14)); A.sparkle(h, P.x + x, P.y + y, 6, 0xfff3b0); }); }
       else if (k === 2) {
@@ -90,7 +91,7 @@
         else add(A.text(this, 50, 200, 'esperando…', 11, '#2b1b30', { strokeThickness: 0 }).setDepth(111));
       } else {
         mg.btn(this, add, 44, 192, 84, 16, '🖼 Ver álbum', 0xffd24a, () => G.ui.album(), 110, 12);
-        mg.btn(this, add, 44, 210, 84, 16, '◀ Al mapa', 0xff7aa8, () => G.flow.openMap(), 110, 12);
+        mg.btn(this, add, 44, 210, 84, 16, '◀ Al igloo', 0xff7aa8, () => G.flow.home(), 110, 12);
       }
     }
     shoot() {

@@ -23,7 +23,7 @@
     const s = screen(`<h1>LIMA<br>DE A DOS</h1><div class="sub">Un juego para Sebas y Daniela 💜</div>
       <button class="btn go" id="b_play">▶ Jugar</button>
       <button class="btn alt small" id="b_set">⚙ Ajustes</button>
-      <div class="small-note" style="color:#fff;margin-top:14px;text-shadow:2px 2px 0 #2b1b30">v${G.VERSION} · Etapa 2 · cada uno en su laptop, se conectan con un código</div>`);
+      <div class="small-note" style="color:#fff;margin-top:14px;text-shadow:2px 2px 0 #2b1b30">v${G.VERSION} · cada uno en su laptop, se conectan con una palabra de amor</div>`);
     s.querySelector('#b_play').onclick = () => { G.audio.start(); G.audio.sfx('ok'); G.flow.toSetup(); };
     s.querySelector('#b_set').onclick = () => { G.audio.start(); ui.settings(); };
   };
@@ -31,8 +31,7 @@
   ui.setup = function () {
     const me = G.state.me;
     let sel = me.id || null; const LQ = new URLSearchParams(location.search);
-    if (G.local) sel = LQ.get('me') || (G.slot ? 'dani' : 'sebas');
-    const s = screen(`<h1>${G.local ? 'TU NOMBRE' : '¿QUIÉN ERES?'}</h1><div class="sub">Elige tu personaje y escribe tu nombre (así te llamará el juego)</div>
+    const s = screen(`<h1>¿QUIÉN ERES?</h1><div class="sub">Elige tu personaje y escribe tu nombre (así te llamará el juego)</div>
       <div class="cards" id="cards"></div>
       <div style="width:min(360px,90vw)"><input type="text" id="nm" maxlength="14" placeholder="Tu nombre"></div>
       <div class="row" style="margin-top:12px"><button class="btn go" id="next">Continuar ▶</button></div>
@@ -40,7 +39,7 @@
     const cards = s.querySelector('#cards'), inp = s.querySelector('#nm');
     function draw() {
       cards.innerHTML = '';
-      ['sebas', 'dani'].filter(id => !G.local || id === sel).forEach(id => {
+      ['sebas', 'dani'].forEach(id => {
         const c = el('div', 'card panel' + (sel === id ? ' sel' : ''));
         const cv = el('canvas'); G.drawLook(cv, id === me.id && me.look ? me.look : G.defaultLook(id), 'd', 0, 7); c.appendChild(cv);
         c.appendChild(el('div', 'px', ''));
@@ -49,19 +48,14 @@
         cards.appendChild(c);
       });
     }
-    inp.value = me.name || (G.local ? G.IDS[sel].label : '');
+    inp.value = me.name || '';
     draw();
     s.querySelector('#next').onclick = () => {
       const name = inp.value.trim();
       if (!sel) { s.querySelector('#msg').textContent = 'Elige quién eres 👆'; return; }
       if (!name) { s.querySelector('#msg').textContent = 'Escribe tu nombre ✏️'; return; }
-      G.audio.start(); G.audio.sfx('ok'); G.flow.setMe(sel, name); if (G.local) { ui.localWait(); G.net.hello(); } else G.flow.toLobby();
+      G.audio.start(); G.audio.sfx('ok'); G.flow.setMe(sel, name); G.flow.toLobby();
     };
-  };
-
-  /* misma laptop: espera a que el otro jugador también ponga su nombre */
-  ui.localWait = function () {
-    screen('<h1>¡LISTO!</h1><div class="sub">Esperando a que tu pareja ponga su nombre…</div><div class="spin" style="margin:10px auto"></div>');
   };
 
   ui.lobby = function () {
@@ -69,7 +63,7 @@
     const s = screen(`<h1>SALA</h1><div class="sub">Uno crea la sala y le pasa el código al otro</div>
       <div class="row" id="opts">
         <div class="panel" style="width:280px"><b>🏠 Crear sala</b><br><span class="small-note">Te da un código para compartir</span><br><button class="btn go" id="mk">Crear sala</button></div>
-        <div class="panel" style="width:280px"><b>🔑 Unirme con código</b><br><input type="text" id="cd" maxlength="5" placeholder="CÓDIGO" style="text-transform:uppercase;text-align:center;letter-spacing:6px;margin:6px 0"><br><button class="btn" id="jn">Unirme</button></div>
+        <div class="panel" style="width:280px"><b>🔑 Unirme con código</b><br><input type="text" id="cd" maxlength="5" placeholder="PALABRA" style="text-transform:uppercase;text-align:center;letter-spacing:6px;margin:6px 0"><br><button class="btn" id="jn">Unirme</button></div>
       </div>
       <div id="st" style="margin-top:10px"></div>
       <div class="row"><button class="btn alt small" id="back">◀ Volver</button>${room.code ? `<button class="btn gold small" id="rc">↻ Reconectar (${esc(room.code)} · ${room.role === 'host' ? 'anfitrión' : 'invitado'})</button>` : ''}</div>`);
@@ -112,7 +106,8 @@
     const sc = el('div', '', ''); sc.id = 'score';
     const right = el('div', '', ''); right.id = 'hudr';
     const mk = (t, f, cls) => { const b = el('button', 'btn small ' + (cls || ''), t); b.onclick = f; return b; };
-    right.appendChild(mk('👕 Clóset', () => ui.closet())); right.appendChild(mk('⚙', () => ui.settings(), 'alt'));
+    right.appendChild(mk('👕 Clóset', () => ui.closet())); const mb = mk('💌', () => ui.mailbox(), ui.unread && ui.unread() ? 'gold' : ''); mb.id = 'mailbadge'; if (ui.unread && ui.unread()) mb.textContent = '💌 ' + ui.unread(); right.appendChild(mb);
+    right.appendChild(mk('🏠 Igloo (Esc)', () => G.flow.home(), 'alt')); right.appendChild(mk('⚙', () => ui.settings(), 'alt'));
     hud.append(left, sc, right);
     ui.updateScore(); ui.updateC4();
     const em = $('#emotes'); em.innerHTML = '';
@@ -152,7 +147,7 @@
   window.addEventListener('keydown', e => {
     if (G.typing || G.modalOpen) return;
     if (e.key === 'Enter') { ui.openChat(); e.preventDefault(); }
-    const n = parseInt(e.key, 10); if (n >= 1 && n <= G.EMOTES.length && !$('#hud').classList.contains('hidden')) G.flow.emote(G.EMOTES[n - 1][0]);
+    const n = parseInt(e.key, 10); if (n >= 1 && n <= Math.min(9, G.EMOTES.length) && !$('#hud').classList.contains('hidden')) G.flow.emote(G.EMOTES[n - 1][0]);
   });
 
   /* ---------- pausa por desconexión ---------- */
@@ -195,19 +190,21 @@
     const pv = el('div', 'pv'); wrap.appendChild(pv);
     const views = el('div', 'views'), cvs = ['d', 'u', 'l', 'r'].map(() => el('canvas')); cvs.forEach(c => views.appendChild(c)); pv.appendChild(views);
     pv.appendChild(el('div', 'name', esc(me.name)));
-    const pcv = el('canvas'); pv.appendChild(pcv);
+    const pcv = el('canvas'); pv.appendChild(pcv); const lcv = G.state.lalaSeen ? el('canvas') : null; if (lcv) pv.appendChild(lcv);
     pv.appendChild(el('div', 'small-note', 'Todo se puede personalizar. Se guarda solo y tu pareja te ve al instante.'));
     let fr = 0;
     function drawPv() {
       const shown = tab === 'Playa' ? G.beachLook(look, id) : look;
       ['d', 'u', 'l', 'r'].forEach((d, i) => G.drawLook(cvs[i], shown, d, fr, 4, d === 'r'));
-      G.drawPuffle(pcv, look.puffle, 4);
+      G.drawPuffle(pcv, look.puffle, 4); if (lcv) { lcv.style.display = look.lala ? '' : 'none'; if (look.lala) G.drawLala(lcv, 3); }
     }
     const anim = setInterval(() => { fr = (fr + 1) % 3; drawPv(); }, 280);
     const opts = el('div', 'opts'); wrap.appendChild(opts);
     const tabsEl = el('div', 'tabs'); opts.appendChild(tabsEl);
     const body = el('div', ''); opts.appendChild(body);
-    const TABS = ['Pelo', 'Cara', 'Ropa', 'Zapatos', 'Accesorios', 'Playa', 'Puffle'];
+    const TABS = id === 'sebas' ? ['Pelo', 'Cara', 'Mood', 'Ropa', 'Zapatos y medias', 'Accesorios', 'Playa', 'Puffle'] : ['Pelo', 'Cara', 'Mood', 'Ropa', 'Zapatos', 'Accesorios', 'Playa', 'Puffle'];
+    if (G.state.lalaSeen) TABS.push('Lala');
+    if (!TABS.includes(tab)) tab = 'Pelo';
 
     function commit() { G.save(); G.bus.emit('look'); drawPv(); render(); }
     function render() {
@@ -217,35 +214,41 @@
       const o = look.outfit, t = o.top, bt = o.bottom, sh = o.shoes, acc = look.acc;
       if (tab === 'Pelo') {
         add('Looks favoritos', chips(G.PRESETS[id].looks.map((l, i) => [i, l.name]), -1, i => { look.hair = Object.assign({}, G.PRESETS[id].looks[i].hair); commit(); }));
-        add('Estilo', chips(G.HAIR_STYLES, look.hair.style, v => { look.hair.style = v; commit(); }));
+        add('Estilo', chips(G.HAIR_STYLES.filter(h => (G.HAIR_FOR[id] || []).includes(h[0])), look.hair.style, v => { look.hair.style = v; commit(); }));
         add('Color', swatches(G.HAIR_COLORS, look.hair.color, c => { look.hair.color = pick(c); look.hair.color2 = Array.isArray(c) ? c[2] : undefined; commit(); }));
         const lg = el('div', 'sw'); const li = el('input'); li.type = 'color'; li.value = look.hair.color2 || '#d4701f'; li.oninput = () => { look.hair.color2 = li.value; drawPv(); G.save(); G.bus.emit('look'); };
         const nl = el('button', 'btn small', 'Sin luces'); nl.onclick = () => { look.hair.color2 = undefined; commit(); }; lg.append(li, nl); add('Luces / mechas', lg);
       } else if (tab === 'Cara') {
         add('Piel', swatches(G.SKINS, look.skin, c => { look.skin = pick(c); commit(); }));
-        add('Ojos', chips([['dot', 'Normales'], ['lash', 'Pestañas'], ['happy', 'Felices']], look.eyeStyle, v => { look.eyeStyle = v; commit(); }));
+        add('Ojos', chips([['dot', 'Normales']].concat(id === 'dani' ? [['lash', 'Pestañas']] : []).concat([['happy', 'Felices']]), look.eyeStyle, v => { look.eyeStyle = v; commit(); }));
         add('Boca', chips([['smile', 'Sonrisa'], ['grin', 'Sonrisón']], look.mouth, v => { look.mouth = v; commit(); }));
         add('Mejillas', chips([[true, 'Con rubor'], [false, 'Sin rubor']], look.blush !== false, v => { look.blush = v; commit(); }));
         add('Lentes', chips([['none', 'Sin lentes'], ['rect', 'Rectangulares'], ['round', 'Redondos'], ['sun', 'De sol']], look.glasses.type, v => { look.glasses.type = v; commit(); }));
         add('Color de lentes', swatches(['#1c1c24', '#6b3a22', '#c33a6a', '#2f6bd6', '#d9b04a', '#fffaf0'], look.glasses.color, c => { look.glasses.color = pick(c); commit(); }));
-        add('Aretes', chips([['none', 'Sin aretes'], ['flower', 'Flor dorada'], ['stud', 'Topitos'], ['hoop', 'Argollas']], look.earrings || 'none', v => { look.earrings = v; commit(); }));
+        if (id === 'dani') add('Aretes', chips([['none', 'Sin aretes'], ['flower', 'Flor dorada'], ['stud', 'Topitos'], ['hoop', 'Argollas']], look.earrings || 'none', v => { look.earrings = v; commit(); }));
+      } else if (tab === 'Mood') {
+        add('Cara de hoy (cómo te ves de ánimo)', chips([['normal', '🙂 Normal'], ['feliz', '😄 Feliz'], ['enamorado', '😍 Enamorado/a'], ['enojado', '😠 Molesto/a'], ['triste', '😢 Triste'], ['serio', '😐 Serio/a'], ['dormido', '😴 Con sueño']], look.mood || 'normal', v => { look.mood = v; commit(); }));
+        add('', el('div', 'hint', 'Tu cara cambia en el igloo, el mapa y los lugares, y tu pareja la ve.'));
       } else if (tab === 'Ropa') {
         add('Mis outfits', chips(G.PRESETS[id].outfits.map((x, i) => [i, x.name]), look.outfitIdx, i => { G.applyOutfit(look, G.PRESETS[id].outfits[i]); look.outfitIdx = i; commit(); }));
-        add('Outfits de ' + G.IDS[other].short, chips(G.PRESETS[other].outfits.map((x, i) => [i, x.name]), -1, i => { G.applyOutfit(look, G.PRESETS[other].outfits[i]); look.outfitIdx = -1; commit(); }));
-        add('Arriba', chips([['tee', 'Polo'], ['long', 'Manga larga'], ['shirt', 'Camisa'], ['tank', 'Top'], ['cheer', 'Porrista'], ['dress', 'Vestido']], t.style, v => { t.style = v; look.outfitIdx = -1; commit(); }));
+        add('Arriba', chips(id === 'sebas' ? [['tee', 'Polo'], ['shirtS', 'Camisa manga corta'], ['shirt', 'Camisa manga larga'], ['long', 'Polo manga larga']] : [['tee', 'Polo'], ['long', 'Manga larga'], ['shirt', 'Camisa'], ['shirtS', 'Camisa manga corta'], ['tank', 'Top'], ['cheer', 'Porrista'], ['dress', 'Vestido']], t.style, v => { t.style = v; look.outfitIdx = -1; commit(); }));
         add('Color de arriba', swatches(G.SWATCH, t.color, c => { t.color = pick(c); commit(); }));
         add('Manga interior (opcional)', (() => { const d = el('div', 'sw'); d.appendChild(swatches(G.SWATCH, t.under, c => { t.under = pick(c); commit(); })); const n = el('button', 'btn small', 'Ninguna'); n.onclick = () => { t.under = undefined; commit(); }; d.appendChild(n); return d; })());
-        add('Estampado', chips([['none', 'Liso'], ['stripe', 'Rayas'], ['dots', 'Puntos'], ['floral', 'Flores'], ['lemons', 'Limones'], ['paisley', 'Paisley'], ['print', 'Dibujos'], ['logo', 'Logo']], t.pattern || 'none', v => { t.pattern = v; t.p1 = t.p1 || '#fffaf0'; t.p2 = t.p2 || '#e1593f'; commit(); }));
+        add('Estampado', chips([['none', 'Liso'], ['stripe', 'Rayas'], ['dots', 'Puntos'], ['floral', 'Flores'], ['lemons', 'Limones'], ['paisley', 'Paisley'], ['print', 'Dibujos'], ['logo', 'Logo'], ['triangles', 'Triángulos'], ['stars', 'Estrellas'], ['checks', 'Cuadros'], ['waves', 'Olas'], ['pizza', 'Pizzas']], t.pattern || 'none', v => { t.pattern = v; t.p1 = t.p1 || '#fffaf0'; t.p2 = t.p2 || '#e1593f'; commit(); }));
         if (t.pattern && t.pattern !== 'none') { add('Colores del estampado', (() => { const d = el('div', 'sw'); d.append(swatches(G.SWATCH, t.p1, c => { t.p1 = pick(c); commit(); }), swatches(G.SWATCH, t.p2, c => { t.p2 = pick(c); commit(); })); return d; })()); }
         if (t.style !== 'dress') {
-          add('Abajo', chips([['pants', 'Pantalón'], ['shorts', 'Short'], ['skirt', 'Falda']], bt.style, v => { bt.style = v; look.outfitIdx = -1; commit(); }));
+          add('Abajo', chips(id === 'sebas' ? [['pants', 'Pantalón'], ['shorts', 'Short']] : [['pants', 'Pantalón'], ['shorts', 'Short'], ['skirt', 'Falda']], bt.style, v => { bt.style = v; look.outfitIdx = -1; commit(); }));
           add('Color de abajo', swatches(G.SWATCH, bt.color, c => { bt.color = pick(c); commit(); }));
         }
-      } else if (tab === 'Zapatos') {
+      } else if (tab === 'Zapatos' || tab === 'Zapatos y medias') {
         add('Tipo', chips([['sneaker', 'Zapatillas'], ['boot', 'Botines'], ['sandal', 'Sandalias'], ['formal', 'Zapatos']], sh.type, v => { sh.type = v; commit(); }));
         add('Color', swatches(['#fffaf0', '#1b1b1f', '#5a3b24', '#c9a77a', '#d9262c', '#ff7aa8', '#8a5cf6', '#4aa6a0', '#ffd24a'], sh.color, c => { sh.color = pick(c); commit(); }));
+        if (id === 'sebas') {
+          add('🧦 Medias', chips([['none', 'Sin medias'], ['plain', 'Lisas'], ['stripe', 'Rayas'], ['dots', 'Tono sobre tono']], look.socks && look.socks !== 'none' ? (look.socksStyle || 'plain') : 'none', v => { if (v === 'none') look.socks = 'none'; else { look.socksStyle = v; if (!look.socks || look.socks === 'none') look.socks = '#d9262c'; } commit(); }));
+          add('Color de las medias', swatches(['#d9262c', '#ff7aa8', '#ffd24a', '#7fae5a', '#4aa6a0', '#4aa6ff', '#8a5cf6', '#f4a259', '#fffaf0', '#1b1b1f', '#6b3a22', '#3d4a63'], look.socks, c => { look.socks = pick(c); if (!look.socksStyle) look.socksStyle = 'plain'; commit(); }));
+        }
       } else if (tab === 'Accesorios') {
-        add('Sombrero', chips([['none', 'Ninguno'], ['gorro', 'Gorro'], ['cap', 'Gorra'], ['boina', 'Boina'], ['lazo', 'Lazo'], ['corona', 'Corona']], acc.hat || 'none', v => { acc.hat = v; commit(); }));
+        add('Sombrero', chips([['none', 'Ninguno'], ['gorro', 'Gorro'], ['cap', 'Gorra'], ['boina', 'Boina']].concat(id === 'dani' ? [['lazo', 'Lazo']] : []).concat([['corona', 'Corona']]), acc.hat || 'none', v => { acc.hat = v; commit(); }));
         add('Color del sombrero', swatches(G.SWATCH, acc.hatColor, c => { acc.hatColor = pick(c); commit(); }));
         add('Bufanda / pañuelo', (() => { const d = el('div', 'sw'); d.appendChild(swatches(['#d9672b', '#ff7aa8', '#8a5cf6', '#4aa6a0', '#ffd24a', '#d9262c'], acc.scarf, c => { acc.scarf = pick(c); commit(); })); const n = el('button', 'btn small', 'Ninguna'); n.onclick = () => { acc.scarf = 'none'; commit(); }; d.appendChild(n); return d; })());
         add('Mochila', chips([[false, 'No'], [true, 'Sí']], !!acc.backpack, v => { acc.backpack = v; commit(); }));
@@ -257,6 +260,9 @@
       } else if (tab === 'Playa') {
         add('Traje de baño (se usa en Callao y Los Yuyos)', chips(G.SWIMSUITS[id].map((x, i) => [i, x.name]), look.swim || 0, i => { look.swim = i; commit(); }));
         add('', el('div', 'hint', 'Aquí se ve tu traje de baño. En el mapa de Lima los trajes salen solo en las playas.'));
+      } else if (tab === 'Lala') {
+        add('🐱 Lala, la gata de Sebas, te acompaña', chips([[false, 'No'], [true, 'Sí, que me acompañe']], !!look.lala, v => { look.lala = v; commit(); }));
+        add('', el('div', 'hint', 'Se desbloqueó al visitar la casa de Sebas. Sale contigo en el igloo, el mapa y el Olivar (no en los juegos) y en las fotos.'));
       } else if (tab === 'Puffle') {
         add('Color', swatches(['#e63946', '#6fd0ff', '#ffd24a', '#ff8fc0', '#8a5a3a'], look.puffle.color, c => { look.puffle.color = pick(c); commit(); }));
         add('Pelito del puffle', chips(G.PUFFLE_HAIRS, look.puffle.hair === undefined ? 'puntas' : look.puffle.hair, v => { look.puffle.hair = v; commit(); }));

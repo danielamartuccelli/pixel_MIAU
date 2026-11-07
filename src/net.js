@@ -8,7 +8,9 @@
    =========================================================== */
 (function () {
   const G = window.G;
-  const ALPHA = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  /* Los códigos de sala son palabras románticas de 5 letras (sin tildes ni Ñ) */
+  const WORDS = ['AMADO', 'AMADA', 'BESOS', 'CIELO', 'MIMOS', 'DULCE', 'NOVIO', 'NOVIA', 'ADORO', 'ADORA', 'DESEO', 'ROSAS', 'BELLA', 'BELLO', 'LINDA', 'LINDO', 'ROMEO', 'CITAS', 'LUNAS', 'AMAME', 'FELIZ', 'ARDOR', 'CALOR', 'LATIR', 'ALMAS', 'GUAPO', 'GUAPA', 'HOGAR', 'UNIDO', 'UNIDA', 'BRISA', 'POEMA', 'CANTO', 'JOYAS', 'BESAR', 'JURAR'];
+  const norm = c => String(c || '').trim().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Z]/g, '');
   const PREFIX = 'limaduo-';
 
   function peerOpts() {
@@ -25,7 +27,7 @@
     role: null, code: null, peer: null, conn: null, connected: false, ready: false,
     handlers: {}, lastRx: 0, _hb: null, _retry: null, _wasConnected: false,
 
-    newCode() { let c = ''; for (let i = 0; i < 5; i++) c += ALPHA[Math.floor(Math.random() * ALPHA.length)]; return c; },
+    newCode() { return WORDS[Math.floor(Math.random() * WORDS.length)]; },
     on(t, f) { (this.handlers[t] = this.handlers[t] || []).push(f); },
     send(t, d) { if (this.conn && this.conn.open) { try { this.conn.send({ t, d }); } catch (e) { console.warn(e); } } },
 
@@ -48,7 +50,7 @@
 
     /* ---- invitado: se une con el código ---- */
     join(code, onOpen, onError) {
-      this.cleanup(); this.role = 'guest'; this.code = code.trim().toUpperCase();
+      this.cleanup(); this.role = 'guest'; this.code = norm(code);
       G.state.room = { role: 'guest', code: this.code }; G.save();
       const p = this.peer = new Peer(peerOpts());
       const dial = () => {
@@ -114,28 +116,5 @@
 
   G.net = net;
 
-  /* ---------- MODO MISMA LAPTOP: la "red" es el postMessage entre local.html y sus dos iframes ---------- */
-  if (G.local) {
-    const L = {
-      role: G.slot === 0 ? 'host' : 'guest', code: 'LOCAL', connected: false, ready: true, handlers: {}, _was: false,
-      on(t, f) { (this.handlers[t] = this.handlers[t] || []).push(f); },
-      send(t, d) { if (this.connected && t !== 'ping') window.parent.postMessage({ lima: 1, from: G.slot, t, d }, '*'); },
-      hello() { window.parent.postMessage({ lima: 1, from: G.slot, sys: 'hi' }, '*'); },
-      host() { }, join() { }, cleanup() { }
-    };
-    window.addEventListener('message', e => {
-      const m = e.data; if (!m || !m.lima) return;
-      if (m.sys === 'peer') { const was = L._was; L.connected = !!m.up; if (m.up) L._was = true; G.bus.emit('net', { connected: L.connected, reconnect: was && L.connected }); return; }
-      if (m.t) (L.handlers[m.t] || []).forEach(f => { try { f(m.d); } catch (err) { console.error(err); } });
-    });
-    /* el teclado real de esta copia no se usa: se manda a local.html, que lo reparte según los mandos de cada jugador
-       (así los dos pueden jugar a la vez aunque solo una ventana tenga el foco). Lo que se escribe en cuadros de texto sí pasa. */
-    ['keydown', 'keyup'].forEach(type => window.addEventListener(type, e => {
-      if (!e.isTrusted) return; const tg = e.target && e.target.tagName; if (tg === 'INPUT' || tg === 'TEXTAREA') return;
-      e.stopImmediatePropagation(); e.preventDefault();
-      window.parent.postMessage({ lima: 1, from: G.slot, sys: 'key', type, code: e.code, key: e.key }, '*');
-    }, true));
-    G.net = L;
-  }
   window.addEventListener('beforeunload', () => { try { net.conn && net.conn.close(); } catch (e) { } });
 })();

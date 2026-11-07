@@ -37,11 +37,15 @@
                  l: { f: [[5,2,7,1],[4,3,9,2],[4,5,3,1],[9,5,4,8]], b: [[8,10,6,9]] }, u: { f: [[4,2,8,1],[3,3,10,9],[2,5,12,14]] } },
     ondas:     { d: { f: [[4,2,8,1],[3,3,10,2],[3,5,3,1],[10,5,3,1],[4,13,1,6],[11,13,1,6]], b: [[2,4,12,15],[1,7,1,3],[14,7,1,3],[1,13,1,4],[14,13,1,4]] },
                  l: { f: [[5,2,7,1],[4,3,9,2],[4,5,3,1],[9,5,4,8],[13,8,1,4]], b: [[8,10,7,9],[14,13,1,3]] }, u: { f: [[4,2,8,1],[3,3,10,9],[1,5,14,14]] } },
+    punta:     { d: { f: [[3,3,10,2],[4,2,8,1],[3,1,2,2],[6,0,2,3],[9,0,2,3],[11,1,2,2],[3,5,1,1],[12,5,1,1]] },
+                 l: { f: [[4,3,9,2],[5,2,7,1],[5,1,2,2],[8,0,2,3],[10,1,2,2],[9,5,4,2]] }, u: { f: [[3,3,10,8],[4,2,8,1],[4,1,2,2],[7,0,2,3],[10,1,2,2]] } },
     mono:      { d: { f: [[4,2,8,1],[3,3,10,2],[3,5,1,1],[12,5,1,1],[6,0,4,2]] },
                  l: { f: [[5,2,7,1],[4,3,9,2],[9,5,4,3],[7,0,4,2]] }, u: { f: [[4,2,8,1],[3,3,10,7],[6,0,4,2]] } }
   };
   G.HAIR_STYLES = [['bald', 'Pelado'], ['muyCorto', 'Muy corto'], ['cocoCorto', 'Coco corto'], ['cocoLargo', 'Coco largo'],
-                   ['bob', 'Bob'], ['largoLiso', 'Largo liso'], ['ondas', 'Ondas'], ['mono', 'Moño']];
+                   ['bob', 'Bob'], ['largoLiso', 'Largo liso'], ['ondas', 'Ondas'], ['mono', 'Moño'], ['punta', 'Punta (pinchos)']];
+  /* estilos de pelo por personaje (Sebas ya no tiene la opción "pelado") */
+  G.HAIR_FOR = { sebas: ['punta', 'muyCorto', 'cocoCorto', 'cocoLargo'], dani: ['largoLiso', 'ondas', 'bob', 'cocoLargo', 'cocoCorto', 'mono', 'muyCorto', 'punta', 'bald'] };
 
   function hairRects(b, rects, hc, hc2) {
     const hd = shade(hc, -0.22), hl = shade(hc, 0.18);
@@ -68,6 +72,12 @@
       else if (p === 'dots' && (x + y) % 3 === 0 && hh % 2 === 0) P(b, x, y, t.p1);
       else if (p === 'cheer') { if (y === y0 + h - 2) P(b, x, y, t.p1); else if (y === y0 + h - 1) P(b, x, y, t.p2); }
     }
+    const inT = (x, y) => x >= x0 && x < x0 + w && y >= y0 && y < y0 + h;
+    if (p === 'triangles') [[5, 14], [9, 14], [7, 16], [10, 17], [5, 17]].forEach(([x, y]) => { if (inT(x, y)) P(b, x, y, t.p1); if (inT(x - 1, y + 1)) R(b, x - 1, y + 1, 3, 1, t.p1); });
+    if (p === 'stars') [[5, 14], [9, 15], [7, 17], [10, 18]].forEach(([x, y]) => { [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([a, c]) => { if (inT(x + a, y + c)) P(b, x + a, y + c, t.p1); }); });
+    if (p === 'checks') for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) if (((x >> 1) + (y >> 1)) % 2 === 0) P(b, x, y, t.p1);
+    if (p === 'waves') for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) if (y % 3 === 1 && (x + ((y / 3) | 0)) % 4 < 2) P(b, x, y, t.p1);
+    if (p === 'pizza') [[5, 14], [9, 16], [6, 17]].forEach(([x, y]) => { if (inT(x, y)) { P(b, x, y, t.p1); P(b, x + 1, y, t.p1); P(b, x, y + 1, t.p2); } });
     if (p === 'print') { R(b, x0 + 1, y0 + 1, 2, 2, t.p1); R(b, x0 + 4, y0 + 2, 2, 3, t.p2); R(b, x0 + 2, y0 + 4, 3, 1, t.p3 || t.p1); }
     if (p === 'logo') { R(b, 7, 15, 2, 2, t.p1); P(b, 7, 14, t.p1); P(b, 8, 17, t.p1); }
   }
@@ -120,6 +130,16 @@
       });
     }
 
+    // 2b) medias (solo se eligen en el clóset de Sebas): dos filas sobre el zapato
+    if (look.socks && look.socks !== 'none') {
+      const sk = look.socks, st = look.socksStyle || 'plain';
+      const xsF = !side ? [[3, 4], [9, 3]] : (fr === 0 ? [[5, 3], [5, 3]] : fr === 1 ? [[7, 3], [3, 3]] : [[3, 3], [7, 3]]);
+      xsF.forEach(([x, w], i) => {
+        const lf = !side ? lift[i] : 0;
+        [22 - lf, 23 - lf].forEach((yy, k) => R(b, x, yy, 3, 1, st === 'stripe' ? (k === 0 ? sk : '#fffaf0') : st === 'dots' ? (k === 0 ? sk : shade(sk, -0.18)) : sk));
+      });
+    }
+
     // 3) torso
     const tx = side ? 5 : 4, tw = side ? 6 : 8;
     if (t.style === 'bikini') {            // traje de baño: solo el pecho va con color (cuadrado = escote cuadrado)
@@ -134,7 +154,7 @@
     }
     pattern(b, t, tx, 13, tw, t.style === 'bikini' ? 3 : (t.style === 'bare' ? 0 : 6));
     if (!back) {
-      if (t.style === 'shirt') {
+      if (t.style === 'shirt' || t.style === 'shirtS') {
         if (!side) { R(b, 5, 13, 2, 1, '#fffaf0'); R(b, 9, 13, 2, 1, '#fffaf0'); R(b, 7, 14, 2, 5, shade(t.color, -0.12)); P(b, 7, 15, '#2b1b30'); P(b, 7, 17, '#2b1b30'); }
         else R(b, 5, 13, 2, 1, '#fffaf0');
       } else if (!side) R(b, 6, 13, 4, 1, skin);
@@ -150,7 +170,7 @@
     }
 
     // 4) brazos
-    const nSleeve = { tee: 2, long: 5, shirt: 5, cheer: 0, tank: 0, dress: 0 }[t.style] || 0;
+    const nSleeve = { tee: 2, shirtS: 2, long: 5, shirt: 5, cheer: 0, tank: 0, dress: 0 }[t.style] || 0;
     function arm(x, dy) {
       for (let y = 14; y <= 19; y++) {
         const r = y - 14; let c;
@@ -173,14 +193,23 @@
     // 6) cara
     const eye = look.eyes || '#2b1b30', es = look.eyeStyle || 'dot';
     if (dir === 'd') {
+      const mood = look.mood || 'normal', hasGl = look.glasses && look.glasses.type !== 'none';
       [5, 10].forEach((x, i) => {
-        if (es === 'happy') { P(b, x - 1, 8, eye); P(b, x, 7, eye); P(b, x + 1, 8, eye); }
-        else { P(b, x, 8, eye); if (!(look.glasses && look.glasses.type !== 'none')) P(b, x, 9, eye); if (es === 'lash') P(b, i ? x + 1 : x - 1, 7, eye); }
+        if (mood === 'dormido') R(b, x - 1, 8, 3, 1, eye);
+        else if (mood === 'enamorado') { P(b, x - 1, 7, '#e63946'); P(b, x + 1, 7, '#e63946'); R(b, x - 1, 8, 3, 1, '#e63946'); P(b, x, 9, '#e63946'); }
+        else if (es === 'happy' || mood === 'feliz') { P(b, x - 1, 8, eye); P(b, x, 7, eye); P(b, x + 1, 8, eye); }
+        else { P(b, x, 8, eye); if (!hasGl) P(b, x, 9, eye); if (es === 'lash') P(b, i ? x + 1 : x - 1, 7, eye); }
+        if (mood === 'enojado') { P(b, i ? x + 1 : x - 1, 6, eye); P(b, i ? x : x, 7, eye); P(b, i ? x - 1 : x + 1, 7, eye); }
+        if (mood === 'triste') { P(b, x, 10, '#6fd0ff'); P(b, x, 11, '#bfeaff'); }
       });
       if (look.blush !== false) { P(b, 4, 10, '#ff8fa8'); P(b, 11, 10, '#ff8fa8'); }
-      if ((look.mouth || 'smile') === 'grin') { R(b, 6, 11, 4, 1, '#fffaf0'); P(b, 5, 10, '#7a2b3a'); P(b, 10, 10, '#7a2b3a'); R(b, 6, 12, 4, 1, '#7a2b3a'); }
+      if (mood === 'enojado' || mood === 'triste') { R(b, 6, 11, 4, 1, '#7a2b3a'); P(b, 5, 12, '#7a2b3a'); P(b, 10, 12, '#7a2b3a'); }
+      else if (mood === 'serio') R(b, 6, 11, 4, 1, '#7a2b3a');
+      else if (mood === 'dormido') { R(b, 7, 11, 2, 1, '#7a2b3a'); P(b, 12, 4, '#fffaf0'); P(b, 13, 3, '#fffaf0'); }
+      else if (mood === 'enamorado') { R(b, 6, 11, 4, 1, '#fffaf0'); P(b, 5, 10, '#7a2b3a'); P(b, 10, 10, '#7a2b3a'); R(b, 6, 12, 4, 1, '#7a2b3a'); }
+      else if ((look.mouth || 'smile') === 'grin' || mood === 'feliz') { R(b, 6, 11, 4, 1, '#fffaf0'); P(b, 5, 10, '#7a2b3a'); P(b, 10, 10, '#7a2b3a'); R(b, 6, 12, 4, 1, '#7a2b3a'); }
       else { R(b, 6, 11, 4, 1, '#7a2b3a'); P(b, 5, 10, '#7a2b3a'); P(b, 10, 10, '#7a2b3a'); }
-      // aretes
+      // aretes (solo Dani)
       const er = look.earrings;
       if (er === 'flower') { P(b, 2, 11, '#ffd24a'); P(b, 2, 12, '#fff3a0'); P(b, 13, 11, '#ffd24a'); P(b, 13, 12, '#fff3a0'); }
       else if (er === 'stud') { P(b, 2, 10, '#ffd24a'); P(b, 13, 10, '#ffd24a'); }
@@ -356,6 +385,49 @@
     G.drawPuffle(tex.getCanvas(), pf, 1); tex.refresh();
   };
 
+
+  /* ---------- LALA, la gata de Sebas (peluda, atigrada café con pecho y cara blanca, ojos verdes) ---------- */
+  const LW = 22, LH = 20;
+  function lalaBuf(pose) {
+    const b = Array.from({ length: LH }, () => new Array(LW).fill(null));
+    const set = (x, y, c) => { if (x >= 0 && x < LW && y >= 0 && y < LH) b[y][x] = c; };
+    const ell = (cx, cy, rx, ry, c) => { for (let y = 0; y < LH; y++) for (let x = 0; x < LW; x++) { const dx = (x + 0.5 - cx) / rx, dy = (y + 0.5 - cy) / ry; if (dx * dx + dy * dy <= 1) set(x, y, c); } };
+    const BR = '#9a7650', DK = '#4a3626', WH = '#fff8ee', LT = '#c9a77a', GR = '#6fbf73';
+    if (pose === 'sleep') {
+      ell(11, 14, 9, 5, BR); ell(11, 16, 5, 3, WH); ell(6, 11, 4.5, 3.5, BR); ell(5.5, 12.5, 2.5, 2, WH);
+      for (let i = 0; i < 6; i++) set(9 + i * 2, 10 + (i % 2), DK); R2(set, 3, 9, 2, 2, BR); set(4, 8, DK); set(8, 8, BR); set(8, 7, DK);
+      set(4, 11, DK); set(5, 11, DK); set(7, 11, DK); set(6, 13, '#ff9fb0');
+      for (let i = 0; i < 4; i++) set(17 + (i % 2), 15 - i, DK);
+      set(18, 6, '#ffffff'); set(19, 5, '#ffffff');
+      return b;
+    }
+    ell(15.5, 15, 2, 4, BR); for (let i = 0; i < 4; i++) set(15 + (i % 2), 12 + i * 1, DK);        // cola
+    ell(10, 15.5, 6.5, 4.5, BR); ell(10, 16.5, 3.4, 3.6, WH);                                        // cuerpo + pecho
+    for (let i = 0; i < 5; i++) { set(5 + i, 13 + (i % 2), DK); set(13 + (i % 2), 13 + (i % 3), DK); }
+    ell(10, 8, 6.2, 5, BR); ell(10, 10.3, 3.6, 2.8, WH);                                             // cabeza + hocico blanco
+    [[4, 5], [5, 4], [5, 3], [6, 2], [6, 3], [7, 4]].forEach(([x, y]) => set(x, y, BR)); [[17, 5], [16, 4], [16, 3], [15, 2], [15, 3], [14, 4]].forEach(([x, y]) => set(x, y, BR));
+    set(6, 3, '#ff9fb0'); set(15, 3, '#ff9fb0'); set(3, 5, LT); set(18, 5, LT); set(4, 6, LT); set(17, 6, LT);       // orejitas con mechones
+    set(9, 4, DK); set(10, 4, DK); set(10, 5, DK); set(11, 4, DK); set(8, 5, DK); set(12, 5, DK);               // frente rayada
+    [[7, 7], [8, 7], [12, 7], [13, 7]].forEach(([x, y]) => set(x, y, GR)); [[8, 8], [12, 8]].forEach(([x, y]) => set(x, y, '#1b1230')); set(7, 8, GR); set(13, 8, GR);
+    set(10, 9, '#ff9fb0'); set(11, 9, '#ff9fb0'); set(10, 10, '#7a2b3a'); set(11, 10, '#7a2b3a');
+    set(5, 9, WH); set(4, 10, WH); set(16, 9, WH); set(17, 10, WH);                                  // bigotes de pelo
+    set(7, 19, LT); set(8, 19, LT); set(12, 19, LT); set(13, 19, LT);                                // patitas
+    return b;
+  }
+  function R2(set, x, y, w, h, c) { for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) set(x + i, y + j, c); }
+  G.drawLala = function (canvas, scale, pose) {
+    const buf = lalaBuf(pose || 'sit'); canvas.width = (LW + 2) * scale; canvas.height = (LH + 2) * scale;
+    const ctx = canvas.getContext('2d'); ctx.imageSmoothingEnabled = false; ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const has = (x, y) => y >= 0 && y < LH && x >= 0 && x < LW && buf[y][x];
+    ctx.fillStyle = OUT; for (let y = -1; y <= LH; y++) for (let x = -1; x <= LW; x++) if (!has(x, y) && (has(x - 1, y) || has(x + 1, y) || has(x, y - 1) || has(x, y + 1))) ctx.fillRect((x + 1) * scale, (y + 1) * scale, scale, scale);
+    for (let y = 0; y < LH; y++) for (let x = 0; x < LW; x++) if (buf[y][x]) { ctx.fillStyle = buf[y][x]; ctx.fillRect((x + 1) * scale, (y + 1) * scale, scale, scale); }
+  };
+  G.makeLalaTexture = function (scene, key, pose) {
+    if (scene.textures.exists(key)) scene.textures.remove(key);
+    const c = document.createElement('canvas'); G.drawLala(c, 1, pose); scene.textures.addCanvas(key, c);
+  };
+  G.LALA_W = LW + 2; G.LALA_H = LH + 2;
+
   /* ---------- EMOTES 9x9 ---------- */
   const EM = {
     heart: ['.........', '.oo...oo.', 'orrooorro', 'orhrrrrro', 'orrrrrrro', '.orrrrro.', '..orrro..', '...oro...', '....o....'],
@@ -364,9 +436,21 @@
     laugh: ['..ooooo..', '.oyyyyyo.', 'oykyyykyo', 'oyyyyyyyo', 'okyyyyyko', 'oykwwwkyo', '.oykkkyo.', '..ooooo..', '.........'],
     star: ['....o....', '...oyo...', '...oyo...', 'ooooyoooo', 'oyyyyyyyo', '.oyyyyyo.', '.oyyoyyo.', '.oyo.oyo.', '..o...o..'],
     wave: ['...o.o...', '..opopo..', '.opopopo.', '.opppppo.', 'oopppppo.', 'opppppppo', '.opppppo.', '..oppppo.', '...ooooo.'],
+    /* caras: se arman con una base redonda y se les ponen ojos/boca */
+    angry: null, mute: null, sad: null, serious: null,
+    redflag: ['.o.......', '.orrrrro.', '.orrrrrro', '.orrrrro.', '.orrrro..', '.o.......', '.o.......', '.o.......', 'ooo......'],
+    question: ['..oooooo.', '.oppppppo', 'oppoooppo', 'ooo..oppo', '....oppo.', '...oppo..', '...oppo..', '....oo...', '...opo...'],
     dance: ['...oooooo', '...opppp.', '...op..p.', '...op..p.', '.oo.p.oo.', 'oppo..opp', 'oppo..opp', '.oo....oo', '.........']
   };
-  const EPAL = { o: '#2b1b30', r: '#ff4d79', h: '#ffc2d3', k: '#1b1230', w: '#ffffff', y: '#ffd24a', g: '#9aa3b5', G: '#6f7890', p: '#c58cff' };
+  (function () {
+    const base = c => ['..ooooo..', '.o' + c.repeat(5) + 'o.', 'o' + c.repeat(7) + 'o', 'o' + c.repeat(7) + 'o', 'o' + c.repeat(7) + 'o', 'o' + c.repeat(7) + 'o', 'o' + c.repeat(7) + 'o', '.o' + c.repeat(5) + 'o.', '..ooooo..'].map(r => r.split(''));
+    const mk = (c, pts) => { const m = base(c); pts.forEach(([x, y, ch]) => { m[y][x] = ch; }); return m.map(r => r.join('')); };
+    EM.angry = mk('r', [[1, 2, 'k'], [2, 3, 'k'], [3, 3, 'k'], [7, 2, 'k'], [6, 3, 'k'], [5, 3, 'k'], [2, 4, 'k'], [6, 4, 'k'], [3, 6, 'k'], [4, 5, 'k'], [5, 6, 'k']]);
+    EM.mute = mk('y', [[2, 3, 'k'], [6, 3, 'k'], [2, 6, 'k'], [3, 6, 'k'], [4, 6, 'w'], [5, 6, 'k'], [6, 6, 'k']]);
+    EM.sad = mk('y', [[2, 3, 'k'], [6, 3, 'k'], [3, 6, 'k'], [4, 5, 'k'], [5, 6, 'k'], [2, 4, 'b'], [2, 5, 'b'], [2, 6, 'b'], [6, 4, 'b'], [6, 5, 'b'], [6, 6, 'b']]);
+    EM.serious = mk('y', [[1, 2, 'k'], [2, 2, 'k'], [3, 2, 'k'], [5, 2, 'k'], [6, 2, 'k'], [7, 2, 'k'], [2, 4, 'k'], [6, 4, 'k'], [3, 6, 'k'], [4, 6, 'k'], [5, 6, 'k']]);
+  })();
+  const EPAL = { o: '#2b1b30', r: '#ff4d79', h: '#ffc2d3', k: '#1b1230', w: '#ffffff', y: '#ffd24a', g: '#9aa3b5', G: '#6f7890', p: '#c58cff', b: '#4fb8ff' };
   G.emoteCanvas = function (id, scale) {
     const c = document.createElement('canvas'); c.width = c.height = 9 * scale;
     const ctx = c.getContext('2d'); const m = EM[id] || EM.heart;
@@ -403,16 +487,20 @@
               { name: 'Castaño ondas', hair: { style: 'ondas', color: '#4f2e22' } }]
     },
     sebas: {
-      hair: { style: 'cocoLargo', color: '#1b1618' }, skin: '#c98f6a', eyeStyle: 'dot', blush: false, glasses: { type: 'rect', color: '#1c1c24' },
+      hair: { style: 'punta', color: '#1b1618' }, skin: '#c98f6a', eyeStyle: 'dot', blush: false, glasses: { type: 'rect', color: '#1c1c24' },
       earrings: 'none',
       outfits: [
+        { name: 'Azul con triángulos morados', top: T('shirtS', '#3f6fd0', { pattern: 'triangles', p1: '#8a5cf6' }), bottom: { style: 'pants', color: '#2c2f3a' }, shoes: { type: 'sneaker', color: '#fffaf0' } },
+        { name: 'Lino verde', top: T('shirt', '#9bb08a'), bottom: { style: 'pants', color: '#d8d0bd' }, shoes: { type: 'sneaker', color: '#e8e0d0' } },
         { name: 'Polo rojo y gris', top: T('tee', '#c9262e', { under: '#8e9bb0', pattern: 'logo', p1: '#fffaf0' }), bottom: { style: 'pants', color: '#b98c52' }, shoes: { type: 'boot', color: '#5a3b24' } },
         { name: 'Overshirt beige', top: T('shirt', '#d8d0bd'), bottom: { style: 'pants', color: '#cdc4aa' }, shoes: { type: 'sneaker', color: '#e8e0d0' }, backpack: '#2a2a33' },
         { name: 'Camisa blanca', top: T('shirt', '#f3f1ea'), bottom: { style: 'pants', color: '#b88b4e' }, shoes: { type: 'formal', color: '#5a3b24' } },
-        { name: 'Lino azul', top: T('shirt', '#7f9cc4'), bottom: { style: 'pants', color: '#3d4a63' }, shoes: { type: 'sneaker', color: '#fffaf0' } },
+        { name: 'Hawaiana de olas', top: T('shirtS', '#2fb8a6', { pattern: 'waves', p1: '#fffaf0' }), bottom: { style: 'shorts', color: '#d8d0bd' }, shoes: { type: 'sandal', color: '#8a6a44' } },
+        { name: 'Estrellas', top: T('shirtS', '#2c2f3a', { pattern: 'stars', p1: '#ffd24a' }), bottom: { style: 'shorts', color: '#5f7fa6' }, shoes: { type: 'sneaker', color: '#fffaf0' } },
+        { name: 'Cuadros pizza', top: T('shirtS', '#f3f1ea', { pattern: 'checks', p1: '#d9262c' }), bottom: { style: 'pants', color: '#3d4a63' }, shoes: { type: 'boot', color: '#5a3b24' } },
         { name: 'Paisley', top: T('shirt', '#5f7fa6', { pattern: 'paisley', p1: '#a8483f', p2: '#e6d7b0' }), bottom: { style: 'pants', color: '#2c2f3a' }, shoes: { type: 'formal', color: '#1b1b1f' } }
       ],
-      looks: [{ name: 'Pelado', hair: { style: 'bald', color: '#1b1618' } },
+      looks: [{ name: 'Punta', hair: { style: 'punta', color: '#1b1618' } },
               { name: 'Coco largo', hair: { style: 'cocoLargo', color: '#1b1618' } },
               { name: 'Coco corto', hair: { style: 'cocoCorto', color: '#1b1618' } },
               { name: 'Muy corto', hair: { style: 'muyCorto', color: '#1b1618' } }]

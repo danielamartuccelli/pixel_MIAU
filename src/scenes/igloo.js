@@ -21,8 +21,11 @@
       G.state.place = this.place;
       A.emoteTextures(this.game); G.refreshTextures();
       this.night = G.isNight(); this.sk = SKIN[this.owner];
-      this.colliders = [[296, 148, 70, 40], [88, 108, 22, 14], [38, 172, 30, 18]];
-      this.drawRoom();
+      this.isSebas = this.owner === 'sebas';
+      this.colliders = this.isSebas ? [[296, 148, 70, 40], [88, 104, 50, 20], [24, 144, 60, 14]] : [[300, 124, 76, 28], [94, 104, 46, 30], [24, 146, 64, 40], [236, 150, 48, 26]];
+      this.exSlots = [[92, 4], [116, 4], [140, 4], [164, 4], [236, 4], [260, 4], [284, 4]];
+      this.exObjs = [];
+      if (this.isSebas) this.drawSebasRoom(); else this.drawRoom();
       this.makeInteractions();
       this.actors = {};
       const me = G.state.me, pa = G.state.partner;
@@ -32,6 +35,7 @@
       this.keys = this.input.keyboard.addKeys({ up: 'UP', down: 'DOWN', left: 'LEFT', right: 'RIGHT', w: 'W', a: 'A', s: 'S', d: 'D' }, false);
       this.input.keyboard.on('keydown-E', () => this.useNearest()); this.input.keyboard.on('keydown-SPACE', () => this.useNearest());
       this.sendT = 0; this.lastSent = '';
+      if (this.isSebas && !G.state.lalaSeen) { G.state.lalaSeen = true; G.save(); this.time.delayedCall(900, () => G.ui.toast('🐱 ¡Conociste a Lala! Ahora puede acompañarte: Clóset → Lala')); }
       // red + eventos
       this.offs = [
         G.bus.on('chat', m => this.say(this.actors[m.who], m.text)),
@@ -39,97 +43,30 @@
         G.bus.on('pos', d => this.onPos(d)),
         G.bus.on('daynight', () => { if (this.scene.isActive()) this.scene.restart({ place: this.place }); }),
         G.bus.on('look', () => { G.refreshTextures(); }), G.bus.on('album', () => this.drawAlbum()),
+        G.bus.on('gallery', () => this.drawExhibit()), G.bus.on('records', () => this.drawBoard && this.drawBoard()),
+        G.bus.on('house', () => this.drawDecor && this.drawDecor()),
         G.bus.on('partner', () => { G.refreshTextures(); this.actors.partner.label.setText(G.state.partner.name || ''); })
       ];
       this.events.once('shutdown', () => this.offs.forEach(f => f && f()));
       this.sendPos(true);
     }
 
-    /* ---------- dibujo de la sala ---------- */
-    drawRoom() {
-      const sk = this.sk, night = this.night, g = this.add.graphics().setDepth(0);
-      g.fillStyle(sk.wall).fillRect(0, 0, W, 100);
-      g.lineStyle(1, sk.line);
-      for (let r = 0; r < 12; r++) { const y = r * 8 + 4; g.lineBetween(0, y, W, y); for (let x = (r % 2) * 12; x < W; x += 24) g.lineBetween(x, y - 8, x, y); }
-      // cúpula: esquinas oscuras
-      g.fillStyle(0x1b1240).fillTriangle(0, 0, 90, 0, 0, 62).fillTriangle(W, 0, W - 90, 0, W, 62);
-      g.fillStyle(sk.dark, 0.5).fillTriangle(0, 0, 70, 0, 0, 48).fillTriangle(W, 0, W - 70, 0, W, 48);
-      // piso
-      A.bands(g, 0, 100, W, 125, [0xe6f3ff, sk.floor, 0xb9d6f2], 5);
-      g.lineStyle(1, 0xffffff, 0.45); for (let i = 0; i < 9; i++) g.lineBetween(20 + i * 46, 104 + (i % 3) * 8, 36 + i * 46, 108 + (i % 3) * 8);
-      g.fillStyle(0xffffff).fillRect(0, 98, W, 3); g.fillStyle(sk.line).fillRect(0, 101, W, 2);
-      // alfombra
-      g.fillStyle(sk.rug, 0.55).fillEllipse(200, 158, 120, 50).lineStyle(2, 0xffffff, 0.8).strokeEllipse(200, 158, 108, 42);
-      A.heart(g, 200, 156, this.owner === 'sebas' ? 9 : 12, this.owner === 'sebas' ? 0x4aa6ff : 0xff5d97, 0.8);
-      // ventana (ojo de buey)
-      g.fillStyle(0x41546a).fillCircle(140, 56, 24);
-      g.fillStyle(night ? 0x0e1038 : 0x9fd8ff).fillCircle(140, 56, 20);
-      if (night) { g.fillStyle(0x3a2a8a, 0.8).fillCircle(140, 66, 20); g.fillStyle(0xfff7d6).fillCircle(148, 48, 6).fillStyle(0x0e1038).fillCircle(151, 46, 5); [[128, 46], [134, 58], [150, 62], [124, 60]].forEach(([x, y]) => g.fillStyle(0xfff7c2).fillRect(x, y, 1.5, 1.5)); }
-      else { g.fillStyle(0xffffff).fillEllipse(132, 50, 16, 7).fillEllipse(142, 48, 12, 6).fillEllipse(150, 62, 14, 6); g.fillStyle(0xfff3b0).fillCircle(150, 44, 5); }
-      g.lineStyle(3, sk.accent).strokeCircle(140, 56, 21); g.lineStyle(1, 0xffffff, 0.6).lineBetween(140, 36, 140, 76).lineBetween(120, 56, 160, 56);
-      // clóset
-      this.closetG = this.add.graphics().setDepth(1); this.drawCloset();
-      // álbum de fotos: cuadritos en la pared (se llenan con las fotos de las playas)
-      this.albumG = this.add.graphics().setDepth(1); this.drawAlbum();
-      // espejo
-      g.fillStyle(sk.dark).fillEllipse(268, 62, 34, 46); g.fillStyle(0xdff6ff).fillEllipse(268, 62, 28, 40); g.fillStyle(0xffffff, 0.9).fillEllipse(262, 52, 6, 14);
-      // cama
-      g.fillStyle(0x6b4a3a).fillRect(298, 58, 78, 46).fillStyle(0x4a3228).fillRect(298, 58, 8, 46);
-      g.fillStyle(0xfffaf0).fillRoundedRect(310, 62, 26, 14, 5); g.fillStyle(sk.accent).fillRoundedRect(306, 74, 70, 28, 5); g.fillStyle(sk.accent2).fillRect(306, 74, 70, 5);
-      A.heart(g, 340, 90, 5, 0xffffff, 0.9);
-      // cartel de salida
+    /* ---------- piezas comunes ---------- */
+    drawDoor(g) {
       g.fillStyle(0x6b4a3a).fillRect(162, 202, 76, 12).fillStyle(0xffe9b0).fillRect(164, 204, 72, 8);
       this.add.text(200, 208, 'MAPA DE LIMA ▼', { fontFamily: 'VT323', fontSize: '11px', color: '#2b1b30' }).setOrigin(0.5).setDepth(2);
-      // túnel de salida
       g.fillStyle(0xcfe4f2).fillEllipse(200, 246, 76, 64).fillStyle(0x1b1240).fillEllipse(200, 248, 56, 52).fillStyle(0xffd27a, 0.3).fillEllipse(200, 254, 40, 30);
-      // cojín del puffle
-      g.fillStyle(sk.accent, 0.85).fillEllipse(52, 184, 34, 15).fillStyle(0xffffff, 0.5).fillEllipse(50, 181, 18, 5);
-      // mesa de cuatro en raya
-      g.fillStyle(0x5a3a2a).fillRect(302, 178, 4, 12).fillRect(358, 178, 4, 12).fillStyle(0xd9b48a).fillRect(298, 170, 68, 10);
-      g.fillStyle(0x2f5fc8).fillRoundedRect(305, 150, 54, 24, 3);
-      for (let r = 0; r < 4; r++) for (let c = 0; c < 7; c++) { const k = (r * 7 + c * 3) % 5; g.fillStyle(k === 0 ? 0xe63946 : k === 1 ? 0xffd23a : 0x9fc0ff).fillRect(308 + c * 7, 153 + r * 5, 4, 3); }
-      // decoración propia de cada casa
-      const dani = this.owner === 'dani' || this.owner === 'both', sebas = this.owner === 'sebas' || this.owner === 'both', both = this.owner === 'both';
-      if (dani) {
-        // flor morada con tallo verde y centro rojo
-        g.fillStyle(0x7a5a3a).fillRect(92, 112, 12, 10).fillStyle(0x3aa05a).fillRect(97, 90, 2, 24).fillRect(97, 100, 8, 2);
-        [[0, -4], [4, 0], [0, 4], [-4, 0]].forEach(([dx, dy]) => g.fillStyle(0xb07cff).fillCircle(98 + dx, 87 + dy, 4)); g.fillStyle(0xe63946).fillCircle(98, 87, 3);
-        // parlante reggaetón con notas (en el igloo conjunto va a la izquierda de la ventana)
-        if (!both) { this.spk = this.add.graphics({ x: 214, y: 92 }).setDepth(1); this.spk.fillStyle(0x2b1b30).fillRect(-14, -26, 28, 36).fillStyle(0xff5d97).fillCircle(0, -4, 8).fillStyle(0x2b1b30).fillCircle(0, -4, 4).fillStyle(0xffd24a).fillCircle(0, -18, 3); }
-        if (this.spk) this.tweens.add({ targets: this.spk, scaleY: { from: 1, to: 1.05 }, duration: 330, yoyo: true, repeat: -1 });
-        g.fillStyle(0xff9fd0, 0.9).fillTriangle(200, 0, 188, 14, 212, 14).fillStyle(0xffd24a).fillCircle(200, 17, 3);
-      }
-      if (sebas) {
-        // tocadiscos con disco girando + libros
-        g.fillStyle(0x3a2a22).fillRect(204, 82, 36, 18); this.disc = this.add.graphics({ x: 222, y: 80 }).setDepth(1);
-        this.disc.fillStyle(0x15151c).fillEllipse(0, 0, 28, 8).fillStyle(0xe63946).fillEllipse(0, 0, 8, 2.4).fillStyle(0xffffff).fillRect(-12, -0.5, 3, 1);
-        this.tweens.add({ targets: this.disc, scaleX: { from: 1, to: -1 }, duration: 900, yoyo: true, repeat: -1 });
-        ['#c9262e', '#2c5f8a', '#ffd24a', '#5fd1b0', '#8a5cf6'].forEach((c, i) => { g.fillStyle(A.hex(c)).fillRect(176 + i * 5, 78 + (i % 2), 4, 22 - (i % 2)); });
-        if (!both) g.fillStyle(0x7a5a3a).fillRect(92, 112, 12, 10).fillStyle(0x3aa05a).fillRect(93, 92, 3, 22).fillRect(98, 96, 3, 18).fillRect(103, 90, 3, 24);
-        g.fillStyle(0x4aa6ff).fillRect(165, 0, 3, 14).fillStyle(0xffd27a).fillRect(160, 14, 13, 10).fillStyle(0xffffff, 0.8).fillRect(163, 17, 7, 4);
-      }
-      // notas flotantes
-      for (let i = 0; i < 3; i++) { const n = A.text(this, 222, 70, ['♪', '♫', '♪'][i], 14, this.owner === 'sebas' ? '#bfe6ff' : '#ff9fd0').setDepth(3); this.tweens.add({ targets: n, y: 30, x: 222 + (i - 1) * 18, alpha: { from: 1, to: 0 }, duration: 2200, delay: i * 700, repeat: -1 }); }
-      // día / noche
+    }
+    drawDayNight(titleY) {
+      const night = this.night;
       if (night) {
         this.add.rectangle(W / 2, H / 2, W, H, 0x1a1a6a, 0.34).setDepth(4000);
         [[140, 60], [200, 30], [232, 80], [300, 96]].forEach(([x, y]) => { const gl = this.add.circle(x, y, 28, 0xffd27a, 0.18).setDepth(4001).setBlendMode(Phaser.BlendModes.ADD); this.tweens.add({ targets: gl, alpha: { from: 0.12, to: 0.26 }, duration: 1400, yoyo: true, repeat: -1 }); });
       } else this.add.rectangle(W / 2, H / 2, W, H, 0xfff3d6, 0.05).setDepth(4000);
-      // título del lugar
-      this.add.text(W / 2, 26, G.PLACES[this.place].name + ' · ' + G.PLACES[this.place].district, { fontFamily: 'VT323', fontSize: '12px', color: '#ffffff', stroke: '#2b1b30', strokeThickness: 3 }).setOrigin(0.5, 0).setDepth(4002).setAlpha(0.9);
-      // prompt
+      this.add.text(W / 2, titleY, G.PLACES[this.place].name + ' · ' + G.PLACES[this.place].district, { fontFamily: 'VT323', fontSize: '12px', color: '#ffffff', stroke: '#2b1b30', strokeThickness: 3 }).setOrigin(0.5, 0).setDepth(4002).setAlpha(0.9);
       this.prompt = this.add.text(W / 2, 214, '', { fontFamily: 'VT323', fontSize: '14px', color: '#fff3d6', backgroundColor: '#2b1b30', padding: { x: 6, y: 1 } }).setOrigin(0.5).setDepth(4003).setVisible(false);
+      this.add.text(396, 222, 'Esc: salir', { fontFamily: 'VT323', fontSize: '10px', color: '#ffffff', stroke: '#2b1b30', strokeThickness: 2 }).setOrigin(1, 1).setDepth(4003).setAlpha(0.8);
     }
-
-    drawAlbum() {
-      const g = this.albumG; if (!g) return; g.clear(); const n = (G.state.album || []).length;
-      [[176, 40, 14, 18], [194, 36, 18, 22], [214, 41, 14, 18]].forEach(([x, y, w, h], i) => {
-        g.fillStyle(0x6b4a3a).fillRect(x - 1, y - 1, w + 2, h + 2).fillStyle(i < Math.min(3, n) ? 0xe6c48a : 0xf8f4ea).fillRect(x, y, w, h);
-        if (i < Math.min(3, n)) { g.fillStyle(0x7fd6ff).fillRect(x + 1, y + 1, w - 2, h * 0.4).fillStyle(0xff9ec0).fillRect(x + 3, y + h * 0.5, w - 6, h * 0.35); }
-      });
-      if (!this.albumLbl) this.albumLbl = this.add.text(195, 64, 'ÁLBUM' + (n ? ' (' + n + ')' : ''), { fontFamily: 'VT323', fontSize: '10px', color: '#2b1b30' }).setOrigin(0.5).setDepth(2); else this.albumLbl.setText('ÁLBUM' + (n ? ' (' + n + ')' : ''));
-    }
-
     drawCloset() {
       const g = this.closetG, sk = this.sk; g.clear();
       g.fillStyle(0x41546a).fillRect(24, 44, 64, 62).fillStyle(0xcfe4f2).fillRect(27, 47, 58, 56).fillStyle(0xb5d0e4).fillRect(55, 47, 2, 56);
@@ -141,17 +78,197 @@
       this.closetLabel = this.closetLabel || this.add.text(56, 44, 'CLÓSET', { fontFamily: 'VT323', fontSize: '10px', color: '#2b1b30' }).setOrigin(0.5).setDepth(2);
     }
 
+    /* ---------- IGLOO DE LOS DOS: sin cama ni juegos; DJ, TV, taller, cartas, récords, galería y decoración ---------- */
+    drawRoom() {
+      const sk = this.sk, night = this.night, g = this.add.graphics().setDepth(0);
+      g.fillStyle(sk.wall).fillRect(0, 0, W, 100);
+      g.lineStyle(1, sk.line);
+      for (let r = 0; r < 12; r++) { const y = r * 8 + 4; g.lineBetween(0, y, W, y); for (let x = (r % 2) * 12; x < W; x += 24) g.lineBetween(x, y - 8, x, y); }
+      g.fillStyle(0x1b1240).fillTriangle(0, 0, 90, 0, 0, 62).fillTriangle(W, 0, W - 90, 0, W, 62);
+      g.fillStyle(sk.dark, 0.5).fillTriangle(0, 0, 70, 0, 0, 48).fillTriangle(W, 0, W - 70, 0, W, 48);
+      A.bands(g, 0, 100, W, 125, [0xe6f3ff, sk.floor, 0xb9d6f2], 5);
+      g.lineStyle(1, 0xffffff, 0.45); for (let i = 0; i < 9; i++) g.lineBetween(20 + i * 46, 104 + (i % 3) * 8, 36 + i * 46, 108 + (i % 3) * 8);
+      g.fillStyle(0xffffff).fillRect(0, 98, W, 3); g.fillStyle(sk.line).fillRect(0, 101, W, 2);
+      // alfombra con corazón
+      g.fillStyle(sk.rug, 0.55).fillEllipse(200, 158, 120, 50).lineStyle(2, 0xffffff, 0.8).strokeEllipse(200, 158, 108, 42);
+      A.heart(g, 200, 156, 12, 0xff5d97, 0.85);
+      // corazón grande en la pared (el igloo de los dos tiene un corazón)
+      A.heart(g, 200, 80, 10, 0xff5d97, 0.95); g.lineStyle(1.5, 0xffffff, 0.9).strokeCircle(200, 76, 1);
+      // ventana (ojo de buey)
+      g.fillStyle(0x41546a).fillCircle(140, 56, 24);
+      g.fillStyle(night ? 0x0e1038 : 0x9fd8ff).fillCircle(140, 56, 20);
+      if (night) { g.fillStyle(0x3a2a8a, 0.8).fillCircle(140, 66, 20); g.fillStyle(0xfff7d6).fillCircle(148, 48, 6).fillStyle(0x0e1038).fillCircle(151, 46, 5); [[128, 46], [134, 58], [150, 62], [124, 60]].forEach(([x, y]) => g.fillStyle(0xfff7c2).fillRect(x, y, 1.5, 1.5)); }
+      else { g.fillStyle(0xffffff).fillEllipse(132, 50, 16, 7).fillEllipse(142, 48, 12, 6).fillEllipse(150, 62, 14, 6); g.fillStyle(0xfff3b0).fillCircle(150, 44, 5); }
+      g.lineStyle(3, sk.accent).strokeCircle(140, 56, 21); g.lineStyle(1, 0xffffff, 0.6).lineBetween(140, 36, 140, 76).lineBetween(120, 56, 160, 56);
+      this.closetG = this.add.graphics().setDepth(1); this.drawCloset();
+      this.albumG = this.add.graphics().setDepth(1); this.drawAlbum();
+      // espejo
+      g.fillStyle(sk.dark).fillEllipse(268, 62, 34, 46); g.fillStyle(0xdff6ff).fillEllipse(268, 62, 28, 40); g.fillStyle(0xffffff, 0.9).fillEllipse(262, 52, 6, 14);
+      // pizarra de récords (pared derecha)
+      this.boardG = this.add.graphics().setDepth(1); this.boardT = this.add.text(337, 22, '', { fontFamily: 'VT323', fontSize: '10px', color: '#fff3d6', align: 'center', lineSpacing: -1 }).setOrigin(0.5, 0).setDepth(2); this.drawBoard();
+      // set de DJ (mesa con 2 bandejas, mezcladora y parlantes)
+      this.djG = this.add.graphics().setDepth(113); this.drawDj();
+      // TV con puff
+      const tv = this.add.graphics().setDepth(118);
+      tv.fillStyle(0x5a3a2a).fillRect(96, 124, 42, 8).fillStyle(0x3a2418).fillRect(98, 132, 4, 4).fillRect(132, 132, 4, 4);
+      tv.fillStyle(0x23232e).fillRoundedRect(98, 106, 38, 20, 3); tv.fillStyle(0x3a3a4a).fillRect(110, 126, 14, 2);
+      this.tvScreen = this.add.graphics().setDepth(119); this.tvT = 0; this.drawTv();
+      tv.fillStyle(0xb07cff).fillEllipse(116, 150, 28, 14).fillStyle(0xd9bfff).fillEllipse(114, 147, 18, 6);
+      // taller artístico: caballete con pizarra blanca + mesa con pinturas
+      const ta = this.add.graphics().setDepth(150);
+      ta.fillStyle(0x6b4a3a).fillRect(34, 148, 3, 28).fillRect(56, 148, 3, 28).fillRect(45, 150, 2, 26);
+      ta.fillStyle(0xffffff).fillRect(28, 112, 38, 34).lineStyle(2, 0x6b4a3a).strokeRect(28, 112, 38, 34);
+      ta.fillStyle(0xe63946).fillRect(34, 120, 8, 2).fillStyle(0x2f6bd6).fillRect(34, 126, 14, 2).fillStyle(0xffd24a).fillCircle(54, 128, 4).fillStyle(0x3aa05a).fillRect(36, 134, 20, 2);
+      ta.fillStyle(0xd9b48a).fillRect(66, 168, 22, 12).fillStyle(0x7a5a3a).fillRect(68, 180, 3, 8).fillRect(84, 180, 3, 8);
+      [[70, 0xe63946], [75, 0xffd24a], [80, 0x2f6bd6], [85, 0x3aa05a]].forEach(([x, c]) => ta.fillStyle(c).fillRect(x, 164, 4, 4));
+      this.add.text(47, 106, 'TALLER', { fontFamily: 'VT323', fontSize: '10px', color: '#2b1b30', backgroundColor: '#ffe9b0' }).setOrigin(0.5).setDepth(151);
+      // escritorio de cartas
+      const ca = this.add.graphics().setDepth(165);
+      ca.fillStyle(0xd9b48a).fillRect(238, 156, 44, 8).fillStyle(0x7a5a3a).fillRect(240, 164, 4, 12).fillRect(276, 164, 4, 12);
+      ca.fillStyle(0xfffaf0).fillRect(246, 148, 14, 10).fillStyle(0xe63946).fillRect(251, 151, 4, 3).fillStyle(0xff9fd0).fillRect(264, 150, 12, 8); A.heart(ca, 270, 153, 3, 0xe63946);
+      ca.fillStyle(0x3aa05a).fillRect(240, 148, 2, 8).fillStyle(0xffd24a).fillCircle(241, 147, 3);
+      this.add.text(260, 142, 'CARTAS 💌', { fontFamily: 'VT323', fontSize: '10px', color: '#2b1b30', backgroundColor: '#ffe9b0' }).setOrigin(0.5).setDepth(166);
+      // baúl de decoración
+      const ch = this.add.graphics().setDepth(190);
+      ch.fillStyle(0x7a5a3a).fillRoundedRect(122, 178, 26, 16, 3).fillStyle(0xffd24a).fillRect(122, 184, 26, 2).fillRect(133, 183, 4, 5).lineStyle(1.5, 0x2b1b30).strokeRoundedRect(122, 178, 26, 16, 3);
+      this.add.text(135, 174, 'DECORAR', { fontFamily: 'VT323', fontSize: '9px', color: '#2b1b30', backgroundColor: '#ffe9b0' }).setOrigin(0.5).setDepth(191);
+      this.drawDoor(g);
+      // notas flotantes
+      for (let i = 0; i < 3; i++) { const n = A.text(this, 336, 120, ['♪', '♫', '♪'][i], 14, '#ff9fd0').setDepth(3); this.tweens.add({ targets: n, y: 80, x: 336 + (i - 1) * 18, alpha: { from: 1, to: 0 }, duration: 2200, delay: i * 700, repeat: -1 }); }
+      this.exG = this.add.graphics().setDepth(1); this.drawExhibit();
+      this.decorG = this.add.graphics().setDepth(0); this.decorObjs = []; this.drawDecor();
+      this.drawDayNight(26);
+    }
+
+    drawBoard() {
+      const g = this.boardG; if (!g) return; g.clear();
+      g.fillStyle(0x6b4a3a).fillRect(295, 18, 84, 56).fillStyle(0x23403a).fillRect(298, 21, 78, 50).fillStyle(0xfff3d6).fillRect(298, 21, 78, 2);
+      const R = G.state.records, nm = id => (G.state.me.id === id ? G.state.me.name : (G.state.partner.id === id ? G.state.partner.name : G.IDS[id].short)) || G.IDS[id].short;
+      let wd = 0, ws = 0; Object.keys(R.games).forEach(k => { wd += R.games[k].dani || 0; ws += R.games[k].sebas || 0; });
+      this.boardT.setText('RÉCORDS\n' + nm('dani') + ' ' + wd + ' – ' + ws + ' ' + nm('sebas') + '\nmatch: ' + R.matches.dani + '–' + R.matches.sebas + '\n(E para ver todo)');
+    }
+    drawDj() {
+      const g = this.djG; g.clear();
+      g.fillStyle(0x2b1b30).fillRect(300, 128, 74, 4).fillStyle(0x4a3a98).fillRect(300, 132, 74, 12).fillStyle(0x2b1b30).fillRect(302, 144, 4, 8).fillRect(368, 144, 4, 8);
+      [[314, 0xff5d97], [358, 0x4aa6ff]].forEach(([x, c]) => { g.fillStyle(0x15151c).fillCircle(x, 134, 9).fillStyle(c).fillCircle(x, 134, 3.5).lineStyle(1, 0x3a3a4a).strokeCircle(x, 134, 6); });
+      g.fillStyle(0x23232e).fillRect(330, 128, 14, 16); [0xe63946, 0xffd24a, 0x3aa05a].forEach((c, i) => g.fillStyle(c).fillRect(332, 130 + i * 4, 3, 2).fillRect(338, 130 + i * 4, 4, 2));
+      g.fillStyle(0x23232e).fillRect(292, 116, 12, 22).fillRect(370, 116, 12, 22); g.fillStyle(0x4a3a98).fillCircle(298, 124, 3.5).fillCircle(298, 132, 2.5).fillCircle(376, 124, 3.5).fillCircle(376, 132, 2.5);
+      this.add.text(337, 112, 'DJ', { fontFamily: 'VT323', fontSize: '11px', color: '#fff3d6', backgroundColor: '#4a3a98' }).setOrigin(0.5).setDepth(114);
+      if (!this.djLights) { this.djLights = [0xff5d97, 0x4aa6ff, 0xffd24a].map((c, i) => { const l = this.add.circle(318 + i * 18, 150, 3, c, 0.8).setDepth(114); this.tweens.add({ targets: l, alpha: { from: 0.2, to: 1 }, duration: 380 + i * 110, yoyo: true, repeat: -1 }); return l; }); }
+    }
+    drawTv() {
+      const g = this.tvScreen; if (!g) return; g.clear();
+      const k = Math.floor(this.tvT / 700) % 4, bars = [0xe63946, 0xffd24a, 0x3aa05a, 0x2f6bd6, 0xb07cff, 0xff9fd0];
+      g.fillStyle(0x10131f).fillRect(100, 108, 34, 16);
+      if (k === 0) bars.forEach((c, i) => g.fillStyle(c).fillRect(101 + i * 5.3, 109, 5, 14));
+      else if (k === 1) { g.fillStyle(0x6fd0ff).fillRect(101, 109, 32, 14).fillStyle(0xffffff).fillRect(112 + (this.tvT / 90) % 12, 114, 6, 6).fillStyle(0xffd24a).fillRect(115 + (this.tvT / 90) % 12, 117, 2, 1); }
+      else if (k === 2) { g.fillStyle(0x23403a).fillRect(101, 109, 32, 14).fillStyle(0xffffff).fillRect(103, 112 + Math.abs(((this.tvT / 120) % 16) - 8) * 0.8, 2, 4).fillRect(129, 114 + Math.abs(((this.tvT / 150) % 16) - 8) * 0.6, 2, 4).fillRect(114 + (this.tvT / 100) % 6, 115 + (this.tvT / 100) % 4, 2, 2); }
+      else { g.fillStyle(0x2b1b30).fillRect(101, 109, 32, 14); A.heart(g, 117, 118, 4, 0xff5d97); A.heart(g, 126, 114, 2, 0xff9fd0); }
+    }
+
+    /* ---------- galería de dibujos expuestos ---------- */
+    drawExhibit() {
+      if (!this.exG) return;
+      this.exG.clear(); this.exObjs.forEach(o => o.destroy()); this.exObjs = [];
+      const gal = G.state.gallery || [], ex = G.state.exhibit || {};
+      this.exSlots.forEach(([x, y], i) => {
+        const id = ex[i], it = id && gal.find(d => d.id === id);
+        this.exG.fillStyle(0x6b4a3a).fillRect(x - 2, y - 2, 24, 19).fillStyle(it ? 0xffffff : 0xf3ead6).fillRect(x, y, 20, 15);
+        if (it) {
+          const key = 'dw_' + it.id, put = () => { if (!this.scene.isActive()) return; const im = this.add.image(x + 10, y + 7.5, key).setDisplaySize(20, 15).setDepth(1.5); this.exObjs.push(im); };
+          if (this.textures.exists(key)) put(); else { this.textures.once('addtexture-' + key, put); this.textures.addBase64(key, it.img); }
+        } else { const t = this.add.text(x + 10, y + 7, '+', { fontFamily: 'VT323', fontSize: '10px', color: '#b7a98a' }).setOrigin(0.5).setDepth(2); this.exObjs.push(t); }
+      });
+    }
+
+    /* ---------- decoración elegida (4 lugares) ---------- */
+    drawDecor() {
+      if (!this.decorG) return;
+      this.decorObjs.forEach(o => o.destroy()); this.decorObjs = [];
+      const sel = (G.state.house && G.state.house.both) || {};
+      G.DECOR_SLOTS.forEach((sl, i) => { const k = sel[i] !== undefined ? sel[i] : sl.def; if (!k || k === 'none') return; const g = this.add.graphics().setDepth(sl.y + 2); g.x = sl.x; g.y = sl.y; (G.DECOR[k] || (() => { }))(g, this); this.decorObjs.push(g); });
+    }
+
+    /* ---------- CASA DE SEBAS: paredes blancas, piso marrón, luz, pared Mondrian, Cuatro en raya y Lala ---------- */
+    drawSebasRoom() {
+      const night = this.night, g = this.add.graphics().setDepth(0), sk = this.sk;
+      g.fillStyle(0xfafafa).fillRect(0, 0, W, 100); g.fillStyle(0xe8e8ee).fillRect(0, 94, W, 6); g.fillStyle(0xd0d0d8).fillRect(0, 99, W, 2);
+      // piso de madera marrón
+      g.fillStyle(0x8a5a3a).fillRect(0, 100, W, 125);
+      for (let r = 0; r < 8; r++) { const y = 104 + r * 15; g.fillStyle(r % 2 ? 0x7e5034 : 0x956240).fillRect(0, y, W, 14); g.fillStyle(0x5e3a24).fillRect(0, y + 14, W, 1); for (let x = (r * 37) % 70; x < W; x += 70) g.fillRect(x, y, 1, 14); }
+      // luz del techo (lámpara + haz)
+      g.fillStyle(0x2b1b30).fillRect(199, 0, 2, 10).fillStyle(0xffe9a8).fillTriangle(188, 18, 212, 18, 200, 8);
+      g.fillStyle(0xfff3b0, night ? 0.22 : 0.12).fillTriangle(196, 18, 204, 18, 330, 215).fillTriangle(196, 18, 204, 18, 70, 215);
+      g.fillStyle(0xfff3b0, night ? 0.3 : 0.18).fillEllipse(200, 160, 150, 40);
+      // pared Mondrian
+      const mx = 120, my = 12, mw = 150, mh = 76, m = this.add.graphics().setDepth(1);
+      m.fillStyle(0x2b1b30).fillRect(mx - 3, my - 3, mw + 6, mh + 6).fillStyle(0xfdfdfb).fillRect(mx, my, mw, mh);
+      m.fillStyle(0xd9262c).fillRect(mx, my, 46, 38).fillStyle(0xffd24a).fillRect(mx + 104, my + 52, 46, 24).fillStyle(0x2f5fc8).fillRect(mx + 66, my + 52, 38, 24).fillStyle(0xffd24a).fillRect(mx + 128, my, 22, 14).fillStyle(0x2f5fc8).fillRect(mx, my + 52, 24, 24);
+      m.fillStyle(0x15151c); [[46, 0, 4, mh], [0, 38, 104, 4], [104, 0, 4, mh], [0, 52, mw, 4], [66, 52, 4, 24], [128, 0, 4, 52], [104, 14, 46, 4]].forEach(([x, y, w, h]) => m.fillRect(mx + x, my + y, w, h));
+      // corazón de neón (la casa de Sebas tiene un corazón)
+      A.heart(g, 300, 36, 9, 0xff5d97, 1); this.add.circle(300, 36, 22, 0xff5d97, 0.12).setDepth(1).setBlendMode(Phaser.BlendModes.ADD);
+      // ventana
+      g.fillStyle(0x41546a).fillRect(318, 22, 56, 48).fillStyle(night ? 0x0e1038 : 0x9fd8ff).fillRect(321, 25, 50, 42);
+      if (night) { g.fillStyle(0xfff7d6).fillCircle(358, 36, 5).fillStyle(0x0e1038).fillCircle(360, 35, 4); [[330, 34], [340, 52], [352, 56]].forEach(([x, y]) => g.fillStyle(0xfff7c2).fillRect(x, y, 1.5, 1.5)); } else { g.fillStyle(0xffffff).fillEllipse(335, 38, 16, 7).fillEllipse(358, 52, 18, 7); }
+      g.fillStyle(0x41546a).fillRect(344, 25, 2, 42).fillRect(321, 45, 50, 2);
+      this.closetG = this.add.graphics().setDepth(1); this.drawCloset();
+      // repisa con tocadiscos, libros y plantas
+      g.fillStyle(0x5a3a2a).fillRect(96, 100, 52, 6); g.fillStyle(0x3a2a22).fillRect(100, 88, 34, 12);
+      this.disc = this.add.graphics({ x: 117, y: 88 }).setDepth(2); this.disc.fillStyle(0x15151c).fillEllipse(0, 0, 26, 7).fillStyle(0xe63946).fillEllipse(0, 0, 8, 2.4).fillStyle(0xffffff).fillRect(-11, -0.5, 3, 1);
+      this.tweens.add({ targets: this.disc, scaleX: { from: 1, to: -1 }, duration: 900, yoyo: true, repeat: -1 });
+      ['#c9262e', '#2c5f8a', '#ffd24a', '#5fd1b0', '#8a5cf6'].forEach((c, i) => g.fillStyle(A.hex(c)).fillRect(136 + i * 2.4, 90 + (i % 2), 2, 10 - (i % 2)));
+      // mesa de Cuatro en raya
+      const t = this.add.graphics().setDepth(160);
+      t.fillStyle(0x5a3a2a).fillRect(302, 178, 4, 12).fillRect(358, 178, 4, 12).fillStyle(0xd9b48a).fillRect(298, 170, 68, 10);
+      t.fillStyle(0x2f5fc8).fillRoundedRect(305, 150, 54, 24, 3);
+      for (let r = 0; r < 4; r++) for (let c = 0; c < 7; c++) { const k = (r * 7 + c * 3) % 5; t.fillStyle(k === 0 ? 0xe63946 : k === 1 ? 0xffd23a : 0x9fc0ff).fillRect(308 + c * 7, 153 + r * 5, 4, 3); }
+      this.add.text(332, 144, 'CUATRO EN RAYA', { fontFamily: 'VT323', fontSize: '9px', color: '#2b1b30', backgroundColor: '#ffe9b0' }).setOrigin(0.5).setDepth(161);
+      // cojín de Lala + Lala
+      g.fillStyle(0xb07cff, 0.9).fillEllipse(60, 186, 40, 17).fillStyle(0xd9bfff, 0.7).fillEllipse(58, 183, 24, 6);
+      this.lalaSpr = this.add.image(60, 190, 'lala_sleep').setOrigin(0.5, 1).setDepth(191); this.lalaT = 0; this.lalaAwake = 0;
+      // alfombra con corazón
+      g.fillStyle(0x4aa6ff, 0.35).fillEllipse(200, 160, 110, 44); A.heart(g, 200, 158, 8, 0xff5d97, 0.85);
+      this.drawDoor(g);
+      this.drawDayNight(26);
+    }
+
+    drawAlbum() {
+      const g = this.albumG; if (!g) return; g.clear(); const n = (G.state.album || []).length;
+      [[176, 40, 14, 18], [194, 36, 18, 22], [214, 41, 14, 18]].forEach(([x, y, w, h], i) => {
+        g.fillStyle(0x6b4a3a).fillRect(x - 1, y - 1, w + 2, h + 2).fillStyle(i < Math.min(3, n) ? 0xe6c48a : 0xf8f4ea).fillRect(x, y, w, h);
+        if (i < Math.min(3, n)) { g.fillStyle(0x7fd6ff).fillRect(x + 1, y + 1, w - 2, h * 0.4).fillStyle(0xff9ec0).fillRect(x + 3, y + h * 0.5, w - 6, h * 0.35); }
+      });
+      if (!this.albumLbl) this.albumLbl = this.add.text(195, 64, 'ÁLBUM' + (n ? ' (' + n + ')' : ''), { fontFamily: 'VT323', fontSize: '10px', color: '#2b1b30' }).setOrigin(0.5).setDepth(2); else this.albumLbl.setText('ÁLBUM' + (n ? ' (' + n + ')' : ''));
+    }
+
     makeInteractions() {
-      const own = this.owner;
-      this.inter = [
+      const sebas = this.isSebas, base = [
         { id: 'closet', x: 56, y: 118, r: 28, label: 'E: abrir el clóset', fn: () => G.ui.closet() },
-        { id: 'mirror', x: 268, y: 118, r: 26, label: 'E: espejo (cambiarte)', fn: () => G.ui.closet() },
-        { id: 'door', x: 200, y: 208, r: 24, label: 'E: salir al Mapa de Lima', fn: () => G.flow.openMap() },
-        { id: 'bed', x: 340, y: 120, r: 30, label: 'E: dormir un ratito', fn: () => { this.emote(this.actors.me, 'dance'); G.ui.toast('Zzz… todavía no es hora de dormir 💤'); } },
-        { id: 'c4', x: 330, y: 198, r: 34, label: 'E: Cuatro en raya', fn: () => G.travel('conecta4', {}) },
-        { id: 'album', x: 198, y: 118, r: 26, label: 'E: ver el álbum de fotos', fn: () => G.ui.album() }
+        { id: 'door', x: 200, y: 208, r: 24, label: 'E: salir al Mapa de Lima', fn: () => G.flow.openMap() }
       ];
+      this.inter = sebas ? base.concat([
+        { id: 'c4', x: 330, y: 198, r: 36, label: 'E: Cuatro en raya', fn: () => G.travel('conecta4', {}) },
+        { id: 'lala', x: 62, y: 190, r: 30, label: 'E: acariciar a Lala 🐱', fn: () => this.petLala() },
+        { id: 'vinilos', x: 122, y: 118, r: 26, label: 'E: poner un disco', fn: () => { this.emote(this.actors.me, 'star'); G.ui.toast('♪ Suena un disco de vinilo ♪'); } }
+      ]) : base.concat([
+        { id: 'mirror', x: 268, y: 118, r: 26, label: 'E: espejo (cambiarte)', fn: () => G.ui.closet() },
+        { id: 'album', x: 198, y: 118, r: 26, label: 'E: ver el álbum de fotos', fn: () => G.ui.album() },
+        { id: 'expo', x: 170, y: 114, r: 22, label: 'E: galería de dibujos (exponer en la pared)', fn: () => G.ui.gallery() },
+        { id: 'board', x: 336, y: 118, r: 28, label: 'E: pizarra de récords', fn: () => G.ui.records() },
+        { id: 'dj', x: 336, y: 160, r: 30, label: 'E: set de DJ (elegir música)', fn: () => G.ui.dj() },
+        { id: 'tv', x: 116, y: 148, r: 28, label: 'E: ver la TV', fn: () => G.ui.tv() },
+        { id: 'taller', x: 56, y: 198, r: 34, label: 'E: taller artístico (pizarra y crayolas)', fn: () => G.ui.drawing() },
+        { id: 'cartas', x: 262, y: 184, r: 26, label: 'E: escribir una carta 💌 (' + (G.state.session.letters || 0) + '/3)', fn: () => G.ui.letter() },
+        { id: 'decor', x: 134, y: 202, r: 22, label: 'E: decorar el igloo', fn: () => G.ui.decorate() }
+      ]);
       this.inter.forEach(it => { const z = this.add.zone(it.x, it.y - 20, it.r * 1.6, 44).setInteractive({ useHandCursor: true }).setDepth(3000); z.on('pointerdown', () => it.fn()); });
+    }
+    petLala() {
+      const l = this.lalaSpr; G.audio.sfx('heart'); this.emote(this.actors.me, 'heart');
+      const say = ['¡Miau!', 'purrr…', 'prrr 💜', '¡Miau miau!'][Math.floor(Math.random() * 4)];
+      const t = this.add.text(l.x, l.y - 26, say, { fontFamily: 'VT323', fontSize: '12px', color: '#2b1b30', backgroundColor: '#ffffff', padding: { x: 3, y: 1 } }).setOrigin(0.5).setDepth(5000);
+      this.tweens.add({ targets: t, y: t.y - 10, alpha: 0, duration: 1400, onComplete: () => t.destroy() });
+      this.lalaSpr.setTexture('lala_sit'); this.lalaAwake = 4000;
     }
     useNearest() { if (G.typing || G.modalOpen) return; const it = this.nearest(); if (it) it.fn(); }
     nearest() { const a = this.actors.me; let best = null, bd = 1e9; this.inter.forEach(it => { const d = Math.hypot(a.x - it.x, a.y - it.y); if (d < it.r && d < bd) { best = it; bd = d; } }); return best; }
@@ -162,6 +279,7 @@
       const a = { who, x, y, tx: x, ty: y, dir: 'd', moving: false, t: 0, frame: 0 };
       a.shadow = this.add.ellipse(x, y, 14, 5, 0x000000, 0.25);
       a.puf = this.add.image(x - 12, y, 'puf_' + who).setOrigin(0.5, 1);
+      a.lala = this.add.image(x + 14, y, 'lala_sit').setOrigin(0.5, 1).setScale(0.7).setVisible(!!(p.look && p.look.lala)); a.lx = x + 14; a.ly = y;
       a.spr = this.add.sprite(x, y, 'char_' + who, 'd0').setOrigin(0.5, 1);
       a.label = this.add.text(x, y - 32, p.name || '', { fontFamily: 'VT323', fontSize: '12px', color: '#ffffff', stroke: '#2b1b30', strokeThickness: 3 }).setOrigin(0.5, 1);
       a.px = x - 12; a.py = y;
@@ -182,6 +300,8 @@
       a.px += (a.x + ox - a.px) * 0.12; a.py += (a.y + oy - a.py) * 0.12;
       const bob = a.moving ? Math.abs(Math.sin(a.t / 90)) * 3 : Math.abs(Math.sin(a.t / 420)) * 1;
       a.puf.setPosition(Math.round(a.px), Math.round(a.py - bob)).setDepth(a.py - 1);
+      const lk = G.state[a.who === 'me' ? 'me' : 'partner'].look; a.lala.setVisible(!!(lk && lk.lala));
+      a.lx += (a.x - ox * 1.2 + (a.dir === 'u' || a.dir === 'd' ? 14 : 0) - a.lx) * 0.09; a.ly += (a.y - oy * 0.5 - a.ly) * 0.09; a.lala.setPosition(Math.round(a.lx), Math.round(a.ly)).setDepth(a.ly - 1);
       if (a.bub) a.bub.setPosition(a.x, a.y - 40).setDepth(a.y + 2000);
     }
     say(a, text) {
@@ -228,6 +348,8 @@
       pa.x += (pa.tx - pa.x) * 0.25; pa.y += (pa.ty - pa.y) * 0.25; pa.t += pa.moving ? dt : dt * 0.3;
       this.renderActor(me); this.renderActor(pa);
       this.sendT += dt; if (this.sendT > 70) { this.sendT = 0; this.sendPos(); }
+      if (this.lalaSpr) { this.lalaT += dt; if (this.lalaAwake > 0) { this.lalaAwake -= dt; if (this.lalaAwake <= 0) this.lalaSpr.setTexture('lala_sleep'); } else if (Math.floor(this.lalaT / 7000) % 2 === 1) this.lalaSpr.setTexture('lala_sit'); else this.lalaSpr.setTexture('lala_sleep'); }
+      if (this.tvScreen) { this.tvT += dt; if (Math.floor(this.tvT / 90) !== this.tvF) { this.tvF = Math.floor(this.tvT / 90); this.drawTv(); } }
       const it = typing ? null : this.nearest();
       if (it) { this.prompt.setText(it.label).setVisible(true); } else this.prompt.setVisible(false);
       G.state.pos = { x: me.x, y: me.y };

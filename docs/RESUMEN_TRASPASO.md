@@ -105,3 +105,7 @@ Reglas: el **host decide el flujo** de escenas y **solo él (o el modo solo) apl
 
 ## 10. Etapa 9 y modo local (v1.0)
 Hechas: playas Callao y Yuyos, trajes de baño, álbum de fotos, bufandas (antes "cinturones"), decoración morada de la cocina, cierre con ambos frente a frente en el corazón, "2 años y medio" (redondeo por meses en `G.relMonths`) y `local.html` (una laptop, 2 jugadores). Ver `docs/COMPARATIVA_Y_APRENDIZAJES.md`.
+
+
+## 11. v1.1 (lo hecho después de la v1.0)
+Quitado el modo local. Códigos de sala = palabras de amor de 5 letras. Esc global. Igloo conjunto sin cama (DJ, TV, taller con pizarra + galería permanente, cartas, decoración, pizarra de récords); casa de Sebas (Mondrian, Cuatro en raya, Lala); Olivar con Mirada fija; clósets separados; emoticones nuevos; Callao/Yuyos reubicados; salsa con 8 canciones y conteo de errores; PUCP con apuntes; Kennedy con Manolo's; Pollos por clics; mejoras de cocina, música y textos. Pendiente para confirmar con Daniela: nombre real del bar de los pollos y diseño audiovisual original de Pollos. Todo sin playtest real entre dos personas: ajustar tiempos en los archivos `*_sim.js`.

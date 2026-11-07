@@ -13,7 +13,7 @@
 (function () {
   const G = window.G, A = G.art, W = G.W, H = G.H, Q = new URLSearchParams(location.search), mg = G.mg, OUTL = 0x2b1b30;
   const EV = [
-    { name: 'CHAPUZÓN', how: 'Pulsa ← → ALTERNANDO para aguantar el agua helada.\nCuando veas la ola ¡mantén ↓ para agacharte!', cap: 60 },
+    { name: 'CHAPUZÓN', how: 'Pulsa ← → ALTERNANDO para aguantar el chapuzón.\nCuando veas la ola ¡mantén ↓ para agacharte!', cap: 60 },
     { name: 'EQUILIBRIO', how: 'Chamarra pesada, piedras resbalosas: corrige la aguja con ← →\ny salta con ESPACIO cuando esté al centro. 10 piedras.', cap: 45 },
     { name: 'PULSO DE FUERZA', how: 'Aporrea ESPACIO para levantar la piedra más pesada.\nSi vas demasiado rápido ¡te da calambre!', cap: 25 }
   ];

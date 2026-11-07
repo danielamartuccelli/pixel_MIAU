@@ -53,10 +53,10 @@ input[type=text],input[type=number]{font:inherit;font-size:26px;padding:4px 10px
 #hudr{display:flex;gap:6px}
 #c4{position:absolute;left:8px;bottom:8px;background:rgba(43,27,48,.85);color:#fff;border:3px solid var(--ink);padding:3px 10px;border-radius:4px;font-size:20px;pointer-events:auto}
 #c4 b{color:var(--gold)}
-#emotes{position:absolute;right:8px;bottom:8px;display:flex;gap:4px;background:rgba(43,27,48,.85);border:3px solid var(--ink);padding:4px;border-radius:4px}
+#emotes{position:absolute;right:8px;bottom:8px;display:flex;flex-wrap:wrap;justify-content:flex-end;max-width:250px;gap:3px;background:rgba(43,27,48,.85);border:3px solid var(--ink);padding:4px;border-radius:4px}
 #emotes button{background:#fff3d6;border:3px solid var(--ink);padding:2px;cursor:pointer;border-radius:3px;line-height:0}
 #emotes button:hover{background:var(--gold)}
-#emotes canvas{width:26px;height:26px;image-rendering:pixelated}
+#emotes canvas{width:22px;height:22px;image-rendering:pixelated}
 #chat{position:absolute;left:8px;bottom:50px;width:min(360px,60vw);pointer-events:none}
 #chatlog{display:flex;flex-direction:column;gap:2px;margin-bottom:4px}
 #chatlog div{background:rgba(43,27,48,.8);color:#fff;padding:1px 8px;border-radius:3px;font-size:21px;width:fit-content;max-width:100%;word-break:break-word;transition:opacity .6s}
@@ -105,7 +105,7 @@ input[type=range]{width:200px}
   <div id="screens"></div>
   <div id="hud" class="hidden"></div>
   <div id="c4" class="hidden"></div>
-  <div id="chat" class="hidden"><div id="chatlog"></div><input id="chatinput" type="text" maxlength="90" placeholder="Escribe y Enter…" autocomplete="off"><div class="hint">Enter chat · 1-7 emotes · flechas · E usar</div></div>
+  <div id="chat" class="hidden"><div id="chatlog"></div><input id="chatinput" type="text" maxlength="90" placeholder="Escribe y Enter…" autocomplete="off"><div class="hint">Enter chat · 1-9 emoticones · flechas · E usar</div></div>
   <div id="emotes" class="hidden"></div>
   <div id="toast"></div>
   <div id="pause" class="hidden"></div>
@@ -123,6 +123,7 @@ input[type=range]{width:200px}
 <script src="src/audio.js"></script>
 <script src="src/net.js"></script>
 <script src="src/ui.js"></script>
+<script src="src/ui2.js"></script>
 <script src="src/scenes/menu.js"></script>
 <script src="src/scenes/story.js"></script>
 <script src="src/scenes/igloo.js"></script>
@@ -142,6 +143,7 @@ input[type=range]{width:200px}
 <script src="src/scenes/playa.js"></script>
 <script src="src/scenes/yuyos.js"></script>
 <script src="src/scenes/foto.js"></script>
+<script src="src/scenes/olivar.js"></script>
 <script src="src/main.js"></script>
 </body>
 </html>

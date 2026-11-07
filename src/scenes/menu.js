@@ -52,6 +52,10 @@
       g.lineStyle(1, 0x111111).lineBetween(-8, -11, -6.5, -12.5).lineBetween(8, -11, 6.5, -12.5);
       g.fillStyle(0xff5d97).fillTriangle(-1, -17, -10, -22, -10, -13).fillTriangle(1, -17, 10, -22, 10, -13).fillStyle(0xffd0e0).fillCircle(0, -17, 2.4);
     }
+    if (!fem && !o.noGlasses) {    // lentes de nerd: negros, cuadrados y grandes
+      g.lineStyle(1.8, 0x000000).strokeRect(-10.5, -14, 10, 9).strokeRect(0.5, -14, 10, 9).lineBetween(-0.5, -10, 0.5, -10).lineBetween(-10.5, -10, -13, -11).lineBetween(10.5, -10, 13, -11);
+      g.fillStyle(0xffffff, 0.22).fillRect(-9.5, -13, 3, 3).fillRect(1.5, -13, 3, 3);
+    }
     c.add(g);
     const mk = (xx, flip) => { const f = s.add.graphics({ x: xx, y: -6 }); f.fillStyle(outl).fillEllipse(0, 7, 8, 18).fillStyle(navy).fillEllipse(0, 7, 6, 16); f.rotation = flip * 0.25; c.add(f); return f; };
     c.flL = mk(-13.5, 1); c.flR = mk(13.5, -1); c.g = g;
@@ -120,6 +124,7 @@
       G.makeCharTexture(adapter, 'char_' + w, p.look);
       G.makePuffleTexture(adapter, 'puf_' + w, p.look.puffle);
     });
+    if (!G.game.textures.exists('lala_sit')) { G.makeLalaTexture(adapter, 'lala_sit', 'sit'); G.makeLalaTexture(adapter, 'lala_sleep', 'sleep'); }
     // texturas por identidad (para la historia): sebas/dani
     [G.state.me, G.state.partner].forEach(p => { if (p.id && p.look) G.makeCharTexture(adapter, 'char_id_' + p.id, p.look); });
   };

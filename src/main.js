@@ -10,7 +10,7 @@
   G.flow = {};
   G.solo = Q.get('solo') === '1';
   const flow = G.flow;
-  const IN_GAME = ['story', 'igloo', 'map', 'place', 'kennedy', 'pucp', 'cocina', 'martuccini', 'pollos', 'saoco', 'conecta4', 'cardjitsu', 'fin', 'callao', 'yuyos', 'foto'];
+  const IN_GAME = ['story', 'igloo', 'map', 'place', 'kennedy', 'pucp', 'cocina', 'martuccini', 'pollos', 'saoco', 'conecta4', 'cardjitsu', 'fin', 'callao', 'yuyos', 'foto', 'olivar'];
 
   /* ---------- identidad ---------- */
   flow.setMe = function (id, name) {
@@ -30,7 +30,7 @@
 
   function sendHello() {
     const s = G.state;
-    G.net.send('hello', { id: s.me.id, name: s.me.name, look: s.me.look, balance: s.balance, scoreRev: s.scoreRev, records: s.records, recRev: s.recRev, belts: s.belts, scene: s.scene, params: s.sceneParams || {}, storySeen: s.storySeen });
+    G.net.send('hello', { id: s.me.id, name: s.me.name, look: s.me.look, balance: s.balance, scoreRev: s.scoreRev, records: s.records, recRev: s.recRev, belts: s.belts, scene: s.scene, params: s.sceneParams || {}, storySeen: s.storySeen, decTs: s.decTs || 0, house: s.house.both, exhibit: s.exhibit });
   }
   G.bus.on('net', e => {
     if (e.connected) { sendHello(); if (G.pausedKeys) resume(); }
@@ -61,6 +61,7 @@
     if (d.scoreRev > s.scoreRev) { s.balance = d.balance; s.scoreRev = d.scoreRev; G.bus.emit('score'); }
     if (d.recRev > s.recRev) { s.records = d.records; s.recRev = d.recRev; G.bus.emit('records'); }
     if (d.belts) { s.belts[d.id] = Math.max(s.belts[d.id] || 0, d.belts[d.id] || 0); }
+    if ((d.decTs || 0) > (s.decTs || 0)) { s.decTs = d.decTs; s.house.both = d.house || {}; s.exhibit = d.exhibit || {}; G.bus.emit('house'); G.bus.emit('gallery'); }
     G.save(); G.refreshTextures(); G.bus.emit('partner');
     if (G.net.role === 'host') {
       // el anfitrión decide a dónde van (también al reconectar)
@@ -101,6 +102,21 @@
     if (w && G.finShown !== w + ':' + G.state.scoreRev) G.travel('fin', { w });
     else G.travel('map', {});
   };
+  /* Esc: cierra el panel abierto; si no hay, sale de cualquier juego al igloo (y del igloo al mapa, del mapa al igloo) */
+  flow.home = function () {
+    const k = G.state.scene;
+    if (k === 'menu' || k === 'story' || !k) return;
+    if (k === 'igloo') { if (G.state.place === 'igloo') flow.openMap(); else { G.state.place = 'igloo'; G.travel('igloo', { place: 'igloo' }); } return; }
+    if (k === 'map') { G.state.place = G.BASE; G.travel('igloo', { place: G.BASE }); return; }
+    G.state.place = G.BASE; G.travel('igloo', { place: G.BASE });
+  };
+  window.addEventListener('keydown', e => {
+    if (e.key !== 'Escape' || e.repeat) return;
+    if (G.typing) return;
+    const mod = document.querySelector('#ui .modal .xbtn');
+    if (mod) { mod.click(); e.preventDefault(); return; }
+    if (!document.querySelector('#hud.hidden') && G.state.scene) flow.home();
+  });
   flow.goPlace = function (k) {
     const p = G.PLACES[k]; G.state.place = k;
     G.travel(p.scene, { place: k });
@@ -113,7 +129,7 @@
     G.state.scene = key; G.state.sceneParams = params;
     const pk = params.place || (key === 'igloo' ? G.state.place : null);
     G.audio.setStyle(pk && G.PLACES[pk] ? G.PLACES[pk].music : (G.MUSIC_FOR[key] || 'lofi'));
-    G.ui.showHud(['igloo', 'map', 'place', 'kennedy', 'pucp', 'cocina', 'pollos', 'saoco', 'conecta4', 'cardjitsu', 'callao', 'yuyos'].includes(key));
+    G.ui.showHud(['igloo', 'map', 'place', 'kennedy', 'pucp', 'cocina', 'pollos', 'saoco', 'conecta4', 'cardjitsu', 'callao', 'yuyos', 'olivar'].includes(key));
     G.ui.clearScreensIf && G.ui.clearScreensIf(key);
     gm.scene.start(key, params);
     if (!remote && G.net.connected) G.net.send('goto', { key, params });
@@ -126,14 +142,14 @@
       type: Phaser.AUTO, parent: 'game', width: G.W, height: G.H, pixelArt: true, backgroundColor: '#120a22',
       scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
       render: { antialias: false, roundPixels: true }, input: { keyboard: { capture: [] } },
-      scene: [G.MenuScene, G.StoryScene, G.IglooScene, G.MapScene, G.PlaceScene, G.KennedyScene, G.PucpScene, G.CocinaScene, G.MartucciniScene, G.PollosScene, G.SaocoScene, G.Conecta4Scene, G.CardjitsuScene, G.FinScene, G.CallaoScene, G.YuyosScene, G.FotoScene].filter(Boolean)
+      scene: [G.MenuScene, G.StoryScene, G.IglooScene, G.MapScene, G.PlaceScene, G.KennedyScene, G.PucpScene, G.CocinaScene, G.MartucciniScene, G.PollosScene, G.SaocoScene, G.Conecta4Scene, G.CardjitsuScene, G.FinScene, G.CallaoScene, G.YuyosScene, G.FotoScene, G.OlivarScene].filter(Boolean)
     };
     G.game = new Phaser.Game(cfg);
     G.game.events.once('ready', () => {
       window.addEventListener('keydown', e => { if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key) && !G.typing && !G.modalOpen && !(e.target && e.target.tagName === 'INPUT')) e.preventDefault(); });
       G.state.scene = 'menu'; G.refreshTextures && 0;
       G.game.scene.getScenes(true).forEach(s => { }); // menu arranca solo
-      if (G.solo) soloStart(); else if (G.local) G.flow.toSetup(); else G.ui.title();
+      if (G.solo) soloStart(); else G.ui.title();
     });
   }
   /* modo de prueba: un solo navegador, pareja simulada */

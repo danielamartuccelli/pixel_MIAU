@@ -35,7 +35,6 @@
       this.input.keyboard.on('keydown-TAB', e => { if (e && e.preventDefault) e.preventDefault(); if (G.solo && this.phase === 'play') { this.sim.release(this.ctl); this.ctl = 1 - this.ctl; } });
       this.input.on('pointerdown', () => { if (this.phase === 'play') this.down(); });
       this.input.on('pointerup', () => { if (this.phase === 'play') this.up(); });
-      this.input.keyboard.on('keydown-ESC', () => { if (this.phase !== 'play') this.act('exit'); });
       this.nets = [
         ['c_cfg', d => { const k = G.state.kitchen; k.unlocked = Math.max(k.unlocked || 1, d.unlocked || 1); if (this.isHost || this.phase !== 'brief') return; if (d.level !== this.level) { this.openBrief(d.level, 0); } }],
         ['c_ready', d => { this.ready.partner = !!d.r; if (this.phase === 'brief') this.drawBrief(); this.tryStart(); }],
@@ -126,7 +125,7 @@
     page_estaciones() {
       this.T(200, 50, 'Las estaciones de la cocina', 15, '#b5502a').setOrigin(0.5);
       const S = [['cajon', 'Cajones', 'infinitos', 'fideo'], ['plato', 'Platos', 'uno vacío'], ['olla', 'Olla', 'hierve sola'], ['tabla', 'Tabla', 'mantén: corta'], ['sarten', 'Sartén', 'fríe sola'],
-        ['sobre', 'Sobre picante', 'ají y sellar'], ['caldero', 'Caldero', 'mantén: caldo'], ['vent', 'Ventanilla', 'entregar'], ['mesa', 'Mesa', 'armar platos'], ['basurero', 'Basurero', 'tirar']];
+        ['sobre', 'Sobre picante', 'ají y sellar'], ['caldero', 'Caldero', 'caldo al final'], ['vent', 'Ventanilla', 'entregar'], ['mesa', 'Mesa', 'armar platos'], ['basurero', 'Basurero', 'tirar']];
       S.forEach(([k, a, b, c], i) => {
         const x = 46 + (i % 5) * 76, y = 78 + Math.floor(i / 5) * 58;
         this.I('cs_' + k, x, y, 1.8); if (c) this.I('ci_' + c, x, y - 1, 1);
@@ -136,9 +135,9 @@
     page_receta() {
       this.T(200, 50, 'El ramen, paso a paso', 15, '#b5502a').setOrigin(0.5);
       const R = [['Fideos', ['i:fideo', '>', 's:olla', '8 s', '>', 'i:fideo_c']], ['Hongos', ['i:hongo', '>', 's:tabla', 'mantén', '>', 'i:hongo_c']], ['Huevo', ['i:huevo', '>', 's:olla', '9 s', '>', 'i:huevo_h', '>', 's:tabla', '>', 'i:huevo_m']],
-        ['Picante', ['i:aji', '>', 's:sobre', 'hasta 3 ají, mantén para sellar', '>', 'i:sobre1']], ['Armado', ['i:plato', '>', 's:mesa', '+ ingredientes', '>', 's:caldero', 'al final', '>', 's:vent']]];
-      R.forEach(([a, t], i) => { this.T(20, 62 + i * 21, a, 13, '#2b1b30'); this.flow(76, 70 + i * 21, t); });
-      this.flow(20, 176, ['i:quemado', '¡Ojo! Lo que se pasa de cocción se quema: al basurero y vuelve a empezar.']);
+        ['Picante', ['i:aji', '>', 's:sobre', 'hasta 3 ají, mantén para sellar', '>', 'i:sobre1']], ['Armado', ['i:plato', '>', 's:mesa', '+ fideos y toppings', '>', 's:caldero', '>', 's:vent']]];
+      R.forEach(([a, t], i) => { this.T(20, 58 + i * 18, a, 13, '#2b1b30'); this.flow(76, 66 + i * 18, t); });
+      this.T(20, 152, 'EL CALDO va al FINAL: con el plato ya armado, ve al caldero y MANTÉN E (después ya no se agrega nada; los "segundos" van SIN caldo). Lo que se pasa de cocción se quema: ¡al basurero!', 11, '#b5502a', { wordWrap: { width: 358 }, lineSpacing: -2 });
     }
     page_recetas(L) {
       this.T(200, 50, 'Pedidos de este nivel', 15, '#b5502a').setOrigin(0.5);
@@ -218,7 +217,7 @@
         const who = i === this.local ? 'me' : 'partner', p = G.state[who === 'me' ? 'me' : 'partner'], c = sim.ch[i];
         const o = { who, i, vx: c.x, vy: c.y, t: 0, moving: false, px: c.x - 11, py: c.y };
         o.shadow = this.add.ellipse(c.x, OY + c.y, 14, 5, 0x000000, 0.25);
-        o.puf = this.add.image(c.x - 11, OY + c.y, 'puf_' + who).setOrigin(0.5, 1);
+        o.puf = this.add.image(c.x - 11, OY + c.y, 'puf_' + who).setOrigin(0.5, 1).setVisible(false);
         o.spr = this.add.sprite(c.x, OY + c.y, 'char_' + who, 'd0').setOrigin(0.5, 1);
         o.hat = this.add.image(c.x, OY + c.y - 25, 'c_hat');
         o.label = A.text(this, c.x, OY + c.y - 36, (p.name || ''), 10, i === this.local ? '#ffd24a' : '#ffffff', { strokeThickness: 2 });

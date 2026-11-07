@@ -37,7 +37,6 @@
       mg.bind(this, [[px + '_ready', d => { this.ready.partner = !!d.r; if (this.phase === 'lobby') { this.drawLobby(); this.tryStart(); } }],
         [px + '_go', d => { if (this.phase === 'lobby') this.begin(d); }],
         [px + '_res', d => this.showOver(d)], [px + '_again', () => this.scene.restart()]]);
-      this.input.keyboard.on('keydown-ESC', () => { if (this.phase === 'lobby' || this.phase === 'over') G.flow.openMap(); });
       this.time.addEvent({ delay: 1200, loop: true, callback: () => { if (this.phase === 'lobby') mg.send(px + '_ready', { r: this.ready.me }); } });
     }
     addUi(o) { this.ui.push(o); return o; }
@@ -49,13 +48,13 @@
     /* 3 = abajo del HUD de arriba; se dibuja encima de todo en depth 5000 */
     drawLobby() {
       this.clearUi(); const add = o => this.addUi(o), D = 5000;
-      mg.panel(this, add, 30, 38, 340, 148, D);
-      add(A.text(this, 200, 52, this.title, 16, '#ffd24a').setDepth(D + 1));
-      add(this.add.text(200, 64, this.blurb, { fontFamily: 'VT323', fontSize: '13px', color: '#fff3d6', align: 'center', lineSpacing: -2, wordWrap: { width: 310 } }).setOrigin(0.5, 0).setDepth(D + 1));
+      mg.panel(this, add, 26, 24, 348, 176, D);
+      add(A.text(this, 200, 37, this.title, 15, '#ffd24a').setDepth(D + 1));
+      add(this.add.text(200, 48, this.blurb, { fontFamily: 'VT323', fontSize: '11px', color: '#fff3d6', align: 'left', lineSpacing: -3, wordWrap: { width: 326 } }).setOrigin(0.5, 0).setDepth(D + 1));
       const label = this.ready.me ? '✔ ¡Listo!' : '¡Estoy listo!';
-      mg.btn(this, add, 200, 158, 120, 22, label, this.ready.me ? 0x7fd1ae : 0xff7aa8, () => { this.ready.me = !this.ready.me; mg.send(this.px + '_ready', { r: this.ready.me }); this.drawLobby(); this.tryStart(); }, D, 15);
-      add(this.add.text(200, 174, G.solo ? this.nameOp() + ' (bot) 🤖: listo' : this.nameOp() + (this.ready.partner ? ': ✔ listo' : ': esperando…'), { fontFamily: 'VT323', fontSize: '12px', color: '#c9c4ff' }).setOrigin(0.5, 0).setDepth(D + 1));
-      mg.btn(this, add, 344, 205, 62, 18, '◀ Mapa', 0xffffff, () => G.flow.openMap(), D, 12);
+      mg.btn(this, add, 100, 186, 110, 18, label, this.ready.me ? 0x7fd1ae : 0xff7aa8, () => { this.ready.me = !this.ready.me; mg.send(this.px + '_ready', { r: this.ready.me }); this.drawLobby(); this.tryStart(); }, D, 14);
+      add(this.add.text(176, 180, G.solo ? this.nameOp() + ' (bot) 🤖: listo' : this.nameOp() + (this.ready.partner ? ': ✔ listo' : ': esperando…'), { fontFamily: 'VT323', fontSize: '12px', color: '#c9c4ff' }).setOrigin(0, 0).setDepth(D + 1));
+      mg.btn(this, add, 336, 186, 60, 18, '◀ Igloo', 0xffffff, () => G.flow.home(), D, 12);
     }
     tryStart() {
       if (this.phase !== 'lobby' || !this.ready.me || !(this.ready.partner || G.solo) || !this.isHost()) return;
@@ -97,7 +96,7 @@
     constructor() { super('callao'); }
     create() {
       this.recKey = 'callao';
-      this.setupBase('a', 'callao', '🪨 PIEDRA, FRÍO Y RESISTENCIA', 'Lucha 1 contra 1 en la orilla del Callao, al mejor de 3 rondas. ESPACIO lanza piedras (se recogen caminando), E golpea (combo de 3). Si te quedas quieto o te salpica el agua, el frío sube y te vuelves lento: ¡muévete y usa las fogatas! Pierdes si tu vida llega a 0 o te congelas.');
+      this.setupBase('a', 'callao', '🪨 PIEDRA, FRÍO Y RESISTENCIA', 'Lucha 1 contra 1 en la orilla del Callao: gana quien gane 2 de 3 rondas.\n• ❤ VIDA: baja con golpes y piedras. Si llega a 0, PIERDES la ronda.\n• ❄ TEMPERATURA: el agua del Callao es helada. Si llega a 100% (hipotermia) PIERDES la ronda.\n• Muévete y usa las fogatas para entrar en calor. ESPACIO = lanzar piedra (se recogen caminando) · E = golpear (combo de 3). Esc = salir.');
       this.bg = this.add.graphics().setDepth(0); G.beach.drawSea(this, this.bg, { seaH: SEA_H, sun: true });
       this.sea = this.add.graphics().setDepth(1); this.fx = this.add.graphics().setDepth(6); this.hud = this.add.graphics().setDepth(4000); this.hudT = [];
       this.keys = this.input.keyboard.addKeys({ up: 'UP', down: 'DOWN', left: 'LEFT', right: 'RIGHT', w: 'W', a: 'A', s: 'S', d: 'D' }, false);
@@ -107,7 +106,7 @@
         ['a_pos', d => { const o = this.op; if (o) { o.tx = d.x; o.ty = d.y; o.fx = d.fx; o.fy = d.fy; o.hp = d.hp; o.tp = d.tp; o.n = d.n; o.mv = d.mv; } }],
         ['a_throw', d => this.spawnProj('partner', d)], ['a_hit', d => { this.props = this.props.filter(p => !(p.own === 'me' && p.id === d.id)); }],
         ['a_melee', d => this.hurt(d.dmg, d.tp, true)], ['a_pick', d => { const s = this.stones[d.i]; if (s) { s.on = false; s.back = this.clock + 7; } }],
-        ['a_dead', () => this.endRound('me')]]);
+        ['a_dead', () => this.endRound('partner')]]);
       this.drawLobby();
       if (G.solo) this.time.delayedCall(600, () => { if (Q.get('aauto') === '1') { this.ready.me = true; this.tryStart(); } });
     }
@@ -270,7 +269,7 @@
           h.fillStyle(OUTL, 0.9).fillRoundedRect(x - 2, 47, 184, 24, 3);
           h.fillStyle(0x5a1a24).fillRect(x, 49, 180, 7).fillStyle(0xe63946).fillRect(x, 49, 180 * Math.max(0, a.hp) / 100, 7);
           h.fillStyle(0x1a3a5a).fillRect(x, 59, 180, 7).fillStyle(a.tp > 70 ? 0xdff6ff : 0x4fb8ff).fillRect(x, 59, 180 * a.tp / 100, 7);
-          this.hudT.push(this.add.text(x + 2, 47, '❤', { fontFamily: 'VT323', fontSize: '9px', color: '#fff' }).setDepth(4001), this.add.text(x + 2, 57, '❄ ' + Math.round(a.tp) + '%  🪨' + a.n, { fontFamily: 'VT323', fontSize: '9px', color: '#fff' }).setDepth(4001));
+          this.hudT.push(this.add.text(x + 2, 47, '❤ VIDA ' + Math.round(a.hp), { fontFamily: 'VT323', fontSize: '9px', color: '#fff' }).setDepth(4001), this.add.text(x + 2, 57, '❄ TEMP. ' + Math.round(a.tp) + '% (100 = pierdes)  🪨' + a.n, { fontFamily: 'VT323', fontSize: '9px', color: '#fff' }).setDepth(4001));
         };
         bar(8, this.me); bar(210, this.op);
         this.hudT.push(this.add.text(200, 74, 'Rondas ' + this.rw.me + ' – ' + this.rw.partner, { fontFamily: 'VT323', fontSize: '12px', color: '#2b1b30', backgroundColor: '#fff3d6', padding: { x: 4, y: 0 } }).setOrigin(0.5, 0).setDepth(4001));

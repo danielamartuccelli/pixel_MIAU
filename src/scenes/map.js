@@ -12,15 +12,15 @@
     { n: 'Magdalena', c: 0xcfe8a9, p: [[160, 108], [210, 112], [235, 138], [190, 146], [158, 132]], l: [190, 128] },
     { n: 'Jesús María', c: 0xe8d7f1, p: [[250, 64], [300, 56], [330, 80], [300, 104], [255, 100]], l: [286, 82] },
     { n: 'Lince', c: 0xff8fb1, p: [[300, 104], [330, 80], [372, 92], [366, 128], [318, 134]], l: [350, 96], big: true },
-    { n: 'San Isidro', c: 0xb5d8ff, p: [[235, 138], [255, 100], [300, 104], [318, 134], [280, 152], [244, 152]], l: [276, 130] },
+    { n: 'San Isidro', c: 0xb5d8ff, p: [[235, 138], [255, 100], [300, 104], [318, 134], [280, 152], [244, 152]], l: [284, 142] },
     { n: 'Miraflores', c: 0xffd966, p: [[190, 146], [235, 138], [244, 152], [280, 152], [300, 200], [292, 252], [236, 258], [198, 240], [172, 176]], l: [206, 184], big: true },
     { n: 'Barranco', c: 0xffb38a, p: [[198, 240], [236, 258], [292, 252], [304, 272], [282, 302], [226, 304], [200, 284], [192, 262]], l: [252, 292], big: true },
-    { n: 'Callao', c: 0xa9d6e8, p: [[108, -70], [262, -70], [268, 0], [134, 0], [118, -34]], l: [196, -52], big: true },
+    { n: 'Callao', c: 0xa9d6e8, p: [[100, -6], [134, 0], [140, 30], [148, 58], [134, 64], [112, 50], [98, 26]], l: [92, 46], big: true },
     { n: 'Surquillo', c: 0xd9c6a5, p: [[280, 152], [318, 134], [366, 128], [372, 172], [330, 192], [290, 200]], l: [330, 160] }
   ];
   const MINI = [[.217, 0], [.319, .039], [.29, .109], [.377, .162], [.667, .183], [.536, .31], [.812, .323], [.957, .41], [.84, .467], [.884, .598], [1, .703], [.913, .773], [.768, .877], [.754, 1], [.71, 1], [.732, .904], [.551, .755], [.42, .703], [.29, .624], [.246, .555], [.159, .528], [.188, .476], [.13, .397], [.188, .345], [.188, .293], [0, .24], [0, .135], [.087, .048]];
-  const SHORT = { igloo: 'Igloo', casa_sebas: 'Casa Sebas', pucp: 'PUCP', kennedy: 'Kennedy', pollos: 'Pollo Pier', cocina: 'Cocina Dani', salsa: 'Saoco', carjitsu: 'Dojo', callao: 'Callao', yuyos: 'Los Yuyos' };
-  const TOP = -70, BOT = 300;   // alto del mundo: el mapa hace scroll vertical
+  const SHORT = { igloo: 'Igloo', casa_sebas: 'Casa Sebas', pucp: 'PUCP', kennedy: 'Kennedy', pollos: 'Pollo Pier', cocina: 'Cocina Dani', salsa: 'Saoco', carjitsu: 'Dojo', callao: 'Callao', yuyos: 'Los Yuyos', olivar: 'Olivar' };
+  const TOP = -20, BOT = 300;   // alto del mundo: el mapa hace scroll vertical
 
   class MapScene extends Phaser.Scene {
     constructor() { super('map'); }
@@ -32,17 +32,17 @@
       A.bands(g, 0, TOP, W, BOT - TOP, night ? [0x0a1a4a, 0x123a7a, 0x1b5a9a] : [0x4ab8f0, 0x2f9ad8, 0x1b78b8], 5);
       for (let r = 0; r < 12; r++) { const wv = this.add.graphics().setDepth(1); wv.lineStyle(2, 0xffffff, night ? 0.25 : 0.5); wv.beginPath(); for (let x = -40; x <= 160; x += 4) { const y = TOP + 14 + r * 32 + Math.sin(x / 20 * Math.PI) * 3; x === -40 ? wv.moveTo(x, y) : wv.lineTo(x, y); } wv.strokePath(); this.tweens.add({ targets: wv, x: 40 * (r % 2 ? -1 : 1), duration: 1800 + r * 150, repeat: -1, ease: 'Sine.easeInOut', yoyo: true }); }
       // tierra base + playa
-      const land = this.add.graphics().setDepth(2); const coast = [[0, TOP], [106, TOP], [116, -34], [132, 0], [140, 30], [148, 58], [148, 84], [162, 108], [160, 132], [174, 176], [192, 206], [196, 240], [190, 270], [200, BOT], [W, BOT], [W, TOP]];
+      const land = this.add.graphics().setDepth(2); const coast = [[0, TOP], [134, TOP], [134, 0], [140, 30], [148, 58], [148, 84], [162, 108], [160, 132], [174, 176], [192, 206], [196, 240], [190, 270], [200, BOT], [W, BOT], [W, TOP]];
       land.fillStyle(0xf3e3b8).fillPoints(coast.map(([x, y]) => ({ x: x - 8 * (y > TOP && y < BOT ? 1 : 0), y })), true); land.fillStyle(0xdfe9c9).fillPoints(coast.map(([x, y]) => ({ x, y })), true);
       DISTRICTS.forEach(d => { land.fillStyle(d.c, night ? 0.75 : 1).fillPoints(d.p.map(([x, y]) => ({ x, y })), true); land.lineStyle(1.5, 0x2b1b30, 0.55).strokePoints(d.p.map(([x, y]) => ({ x, y })), true); });
       // calles
-      land.lineStyle(2, 0xffffff, 0.7); [[150, 62, 330, 56], [258, 64, 270, 214], [160, 108, 372, 128], [232, 138, 372, 172], [240, 252, 290, 262], [140, -4, 262, -4]].forEach(([a, b, c, d]) => land.lineBetween(a, b, c, d));
+      land.lineStyle(2, 0xffffff, 0.7); [[150, 62, 330, 56], [258, 64, 270, 214], [160, 108, 372, 128], [232, 138, 372, 172], [240, 252, 290, 262], [150, 2, 330, 2]].forEach(([a, b, c, d]) => land.lineBetween(a, b, c, d));
       land.lineStyle(2, 0xfff3d6, 0.9); land.beginPath().moveTo(124, -40).lineTo(138, 10).lineTo(150, 60).lineTo(152, 100).lineTo(168, 140).lineTo(184, 190).lineTo(194, 240).lineTo(202, 290).strokePath();
       // el igloo flota en un iceberg frente a la costa
       land.fillStyle(0xdff6ff).fillEllipse(64, 70, 70, 22).fillStyle(0xbfe6f8).fillEllipse(64, 74, 58, 12);
       // etiquetas
       DISTRICTS.forEach(d => A.text(this, d.l[0], d.l[1], d.n, d.big ? 11 : 9, d.big ? '#2b1b30' : '#5a4a60', { stroke: '#ffffff', strokeThickness: d.big ? 3 : 2 }).setDepth(3).setAlpha(d.big ? 1 : 0.85));
-      A.text(this, 62, 130, 'OCÉANO\nPACÍFICO', 12, '#dff6ff').setDepth(3).setAlpha(0.8);
+      A.text(this, 40, 150, 'OCÉANO\nPACÍFICO', 12, '#dff6ff').setDepth(3).setAlpha(0.8);
       A.text(this, 175, 178, 'Costa Verde', 9, '#8a6a30', { stroke: '#fff3d6' }).setDepth(3).setAngle(70).setAlpha(0.7);
       // mini mapa de Lima Metropolitana
       const fixed = [];
@@ -60,7 +60,7 @@
       this.info = this.add.graphics().setDepth(20); this.infoT = this.add.text(200, 204, '', { fontFamily: 'VT323', fontSize: '10px', color: '#fff3d6', wordWrap: { width: 372 }, align: 'center', lineSpacing: -2 }).setOrigin(0.5, 0).setDepth(21);
       this.setInfo(null); fixed.push(this.info, this.infoT);
       // flechas de scroll
-      this.arUp = A.text(this, 62, 52, '▲ más arriba: Callao', 10, '#ffffff').setDepth(30); this.arDn = A.text(this, 70, 190, '▼ más abajo: Barranco', 10, '#ffffff').setDepth(30); fixed.push(this.arUp, this.arDn);
+      this.arUp = A.text(this, 62, 52, '▲ más arriba', 10, '#ffffff').setDepth(30); this.arDn = A.text(this, 70, 190, '▼ más abajo: Barranco y Los Yuyos', 10, '#ffffff').setDepth(30); fixed.push(this.arUp, this.arDn);
       // pines
       this.pins = {};
       Object.keys(G.PLACES).forEach(k => this.makePin(k));
@@ -90,7 +90,7 @@
       const g = this.info; g.clear(); if (!k) { this.infoT.setText(''); return; }
       this.infoT.setStyle({ strokeThickness: 0 }); g.fillStyle(0x2b1b30, 0.92).fillRoundedRect(8, 170, 384, 30, 5).lineStyle(1.5, 0xff7aa8).strokeRoundedRect(8, 170, 384, 30, 5);
       const p = G.PLACES[k], built = !p.stage;
-      this.infoT.setText(p.name + ' · ' + p.district + (p.game ? '  —  ' + p.game + (p.stage ? ' (Etapa ' + p.stage + ')' : '') : '') + '\n' + (p.desc || (k === 'igloo' ? 'Su base: clóset, espejo, cuatro en raya, chat y puerta al mapa.' : 'Casa de Sebas, arriba del Parque Kennedy.')));
+      this.infoT.setText(p.name + ' · ' + p.district + (p.game ? '  —  ' + p.game + (p.stage ? ' (Etapa ' + p.stage + ')' : '') : '') + '\n' + (p.desc || (k === 'igloo' ? 'Su base: clóset, DJ, TV, taller, cartas, récords, galería y puerta al mapa.' : 'Casa de Sebas (Miraflores): Lala, pared Mondrian y Cuatro en raya.')));
       this.infoT.setY(173);
     }
     makePin(k) {

@@ -13,7 +13,7 @@
 (function () {
   const G = window.G, A = G.art, W = G.W, H = G.H, Q = new URLSearchParams(location.search), P = G.P, mg = G.mg;
   const PRIZE = 10, SPEED = 66, B = { x0: 14, x1: 386, y0: 119, y1: 210 };
-  const TB = [[64, 148], [150, 148], [250, 148], [336, 148], [64, 190], [150, 190], [250, 190], [336, 190]];
+  const TB = [[64, 148], [150, 148], [250, 148], [336, 148], [44, 190], [112, 190], [180, 190], [248, 190]];
   const ST = { tap: { x: 64, y: 121, r: 24, txt: 'Barril de cerveza' }, fryer: { x: 336, y: 121, r: 24, txt: 'Freidora de salchipapas' }, bin: { x: 200, y: 121, r: 22, txt: 'Basurero (tira la bandeja)' } };
   const POUR = { b: 0.38, s: 0.62 };      // segundos que toma servir cada cosa
   const OUTL = 0x2b1b30;
@@ -56,12 +56,11 @@
       A.emoteTextures(this.game); G.refreshTextures(); makeTextures(this);
       this.phase = 'lobby'; this.diff = P.DIFFS[Q.get('pdiff')] ? Q.get('pdiff') : 'normal'; this.dur = P.DURS.includes(+Q.get('pdur')) || +Q.get('pdur') >= 20 ? +Q.get('pdur') : 150;
       this.ready = { me: false, partner: false }; this.ui = []; this.opp = { score: 0 }; this.fin = {}; this.sim = null; this.tray = { b: 0, s: 0 }; this.trayOrder = [];
-      this.peeks = 3; this.peekI = -1; this.peekT = 0; this.hold = null; this.sayT = 0; this.cd = 0; this.over = false; this.resolved = false; this.target = null;
+      this.peeks = 3; this.peekI = -1; this.peekT = 0; this.hold = null; this.peekMode = false; this.sayT = 0; this.cd = 0; this.over = false; this.resolved = false; this.target = null;
       this.keys = this.input.keyboard.addKeys({ up: 'UP', down: 'DOWN', left: 'LEFT', right: 'RIGHT', w: 'W', a: 'A', s: 'S', d: 'D' }, false);
       const kb = this.input.keyboard;
-      kb.on('keydown-E', () => this.press()); kb.on('keydown-SPACE', () => this.press()); kb.on('keyup-E', () => this.release()); kb.on('keyup-SPACE', () => this.release());
-      kb.on('keydown-Q', () => this.peek());
-      kb.on('keydown-ESC', () => { if (this.phase === 'lobby' || this.phase === 'over') G.flow.openMap(); });
+      kb.on('keydown-Q', () => this.togglePeek());
+      this.input.on('pointerdown', p => this.click(p));
       this.drawBar(); this.makeActors();
       mg.bind(this, [['o_cfg', d => { if (this.phase === 'lobby') { this.diff = d.diff; this.dur = d.dur; this.drawLobby(); } }],
         ['o_ready', d => { this.ready.partner = !!d.r; if (this.phase === 'lobby') { this.drawLobby(); this.tryStart(); } }],
@@ -147,7 +146,7 @@
       const t = (x, y, s, c, o) => this.add.text(x, y, s, Object.assign({ fontFamily: 'VT323', fontSize: '16px', color: c || '#ffffff', stroke: '#2b1b30', strokeThickness: 3 }, o || {})).setDepth(5000);
       this.hClock = t(6, 30, '', '#ffffff'); this.hOcc = this.add.graphics().setDepth(5000); this.hOccT = t(6, 47, 'AFORO', '#ffd24a', { fontSize: '11px' });
       this.hScore = t(394, 28, '', '#ffd24a', { fontSize: '18px' }).setOrigin(1, 0); this.hStr = t(394, 46, '', '#ff7aa8', { fontSize: '13px' }).setOrigin(1, 0);
-      this.hOpp = t(394, 58, '', '#bfeaff', { fontSize: '13px' }).setOrigin(1, 0); this.hPeek = t(58, 34, '', '#fff3d6', { fontSize: '12px' });
+      this.hOpp = t(394, 58, '', '#bfeaff', { fontSize: '13px' }).setOrigin(1, 0); this.hPeek = t(6, 90, '', '#2b1b30', { fontSize: '13px', stroke: '#ffd24a', strokeThickness: 0, backgroundColor: '#ffd24a', padding: { x: 4, y: 1 } }).setInteractive({ useHandCursor: true }); this.hPeek.on('pointerdown', () => { G.audio.sfx('click'); this.togglePeek(); });
       this.hint = A.text(this, 200, 78, '', 13, '#fff3d6').setDepth(5000);
       this.trayHud = this.add.graphics().setDepth(5000); this.trayHudIc = [0, 1, 2, 3].map(() => this.add.image(0, 0, 'pi_beer').setVisible(false).setDepth(5001));
       this.hTrayT = t(200, 211, '', '#fff3d6', { fontSize: '11px' }).setOrigin(0.5, 0);
@@ -162,16 +161,16 @@
       const add = o => { this.ui.push(o); return o; }, D = 9000;
       mg.panel(this, add, 28, 28, 344, 172, D);
       add(A.text(this, 200, 41, '🍺 EL POLLO PIER · MEMORIA DE PEDIDOS', 15, '#ffd24a').setDepth(D + 1));
-      add(this.add.text(200, 50, 'Solo hay cerveza y salchipapas… ¡y el bar se llena! Cada cliente dice su pedido UNA vez y la burbuja se apaga: recuérdalo. Gana el que sume más con los MISMOS clientes.', { fontFamily: 'VT323', fontSize: '12px', color: '#fff3d6', align: 'center', lineSpacing: -2, wordWrap: { width: 316 } }).setOrigin(0.5, 0).setDepth(D + 1));
-      add(this.add.text(200, 86, 'Mover: flechas/WASD · Servir: mantén E · Entregar: E · Libreta (3 usos): Q', { fontFamily: 'VT323', fontSize: '12px', color: '#9fe0cf' }).setOrigin(0.5, 0).setDepth(D + 1));
-      add(this.add.text(200, 100, 'Dificultad:', { fontFamily: 'VT323', fontSize: '12px', color: '#ffffff' }).setOrigin(0.5, 0).setDepth(D + 1));
-      Object.keys(P.DIFFS).forEach((k, i) => mg.btn(this, add, 140 + i * 60, 122, 54, 18, P.DIFFS[k].name, this.diff === k ? 0xffd24a : 0xbfeaff, () => { this.diff = k; this.sendCfg(); this.drawLobby(); }, D, 13));
-      add(this.add.text(200, 136, 'Duración del turno:', { fontFamily: 'VT323', fontSize: '12px', color: '#ffffff' }).setOrigin(0.5, 0).setDepth(D + 1));
-      P.DURS.forEach((n, i) => mg.btn(this, add, 140 + i * 60, 158, 54, 18, fmt(n), this.dur === n ? 0xffd24a : 0xbfeaff, () => { this.dur = n; this.sendCfg(); this.drawLobby(); }, D, 13));
+      add(this.add.text(200, 52, 'Solo hay cerveza 🍺 y salchipapas 🍟. Cada cliente dice su pedido UNA vez y la burbuja se apaga: ¡recuérdalo!\n1) Clic en la cerveza o las salchipapas: llenas la bandeja (caben 4).\n2) Clic en la mesa del cliente: entregas lo que lleva la bandeja.\n3) ¿No recuerdas? 📖 Libreta (3 usos) + clic en la mesa. Basurero: tira la bandeja.\ngana quien sume más.', { fontFamily: 'VT323', fontSize: '11px', color: '#fff3d6', align: 'center', lineSpacing: -2, wordWrap: { width: 322 } }).setOrigin(0.5, 0).setDepth(D + 1));
+      add(this.add.text(200, 56 + 0, '', { fontSize: '1px' }).setDepth(D));
+      add(this.add.text(200, 120, 'Dificultad:', { fontFamily: 'VT323', fontSize: '11px', color: '#ffffff' }).setOrigin(0.5, 0).setDepth(D + 1));
+      Object.keys(P.DIFFS).forEach((k, i) => mg.btn(this, add, 140 + i * 60, 138, 54, 16, P.DIFFS[k].name, this.diff === k ? 0xffd24a : 0xbfeaff, () => { this.diff = k; this.sendCfg(); this.drawLobby(); }, D, 13));
+      add(this.add.text(200, 150, 'Duración del turno:', { fontFamily: 'VT323', fontSize: '11px', color: '#ffffff' }).setOrigin(0.5, 0).setDepth(D + 1));
+      P.DURS.forEach((n, i) => mg.btn(this, add, 140 + i * 60, 168, 54, 16, fmt(n), this.dur === n ? 0xffd24a : 0xbfeaff, () => { this.dur = n; this.sendCfg(); this.drawLobby(); }, D, 13));
       const nm = G.state.me.name || 'Tú', pn = G.state.partner.name || 'Pareja';
-      mg.btn(this, add, 110, 183, 104, 20, this.ready.me ? '✔ ¡Listo!' : '¡Estoy listo!', this.ready.me ? 0x7fd1ae : 0xff7aa8, () => { this.ready.me = !this.ready.me; mg.send('o_ready', { r: this.ready.me }); this.drawLobby(); this.tryStart(); }, D);
-      add(this.add.text(172, 175, (G.solo ? pn + ' (bot) 🤖: listo' : pn + (this.ready.partner ? ': ✔ listo' : ': esperando…')) + '\n' + nm + (this.ready.me ? ': ✔ listo' : ''), { fontFamily: 'VT323', fontSize: '12px', color: '#fff3d6', lineSpacing: -1 }).setOrigin(0, 0).setDepth(D + 1));
-      mg.btn(this, add, 334, 183, 62, 20, '◀ Mapa', 0xffffff, () => G.flow.openMap(), D, 13);
+      mg.btn(this, add, 110, 186, 104, 18, this.ready.me ? '✔ ¡Listo!' : '¡Estoy listo!', this.ready.me ? 0x7fd1ae : 0xff7aa8, () => { this.ready.me = !this.ready.me; mg.send('o_ready', { r: this.ready.me }); this.drawLobby(); this.tryStart(); }, D);
+      add(this.add.text(172, 178, (G.solo ? pn + ' (bot) 🤖: listo' : pn + (this.ready.partner ? ': ✔ listo' : ': esperando…')) + '\n' + nm + (this.ready.me ? ': ✔ listo' : ''), { fontFamily: 'VT323', fontSize: '12px', color: '#fff3d6', lineSpacing: -1 }).setOrigin(0, 0).setDepth(D + 1));
+      mg.btn(this, add, 334, 186, 62, 18, '◀ Igloo', 0xffffff, () => G.flow.home(), D, 12);
     }
     tryStart() {
       if (this.phase !== 'lobby' || !this.ready.me) return;
@@ -189,14 +188,26 @@
       this.cdT = A.text(this, 200, 100, '', 30, '#ffffff').setDepth(8000);
       G.audio.sfx('ok');
     }
-    press() {
-      if (G.typing || G.modalOpen || this.phase !== 'play') return;
-      const t = this.target; if (!t) { this.say('Acércate al barril, la freidora o una mesa', 1.2); return; }
-      if (t.kind === 'bin') { if (this.tray.b + this.tray.s) { this.tray = { b: 0, s: 0 }; this.trayOrder = []; G.audio.sfx('hit'); this.say('Bandeja vacía 🗑', 1.2); } return; }
-      if (t.kind === 'tap' || t.kind === 'fryer') { this.hold = { kind: t.kind === 'tap' ? 'b' : 's', p: 0 }; return; }
-      if (t.kind === 'table') this.serve(t.i);
+    pick(px, py) {
+      if (py < 112) return null;
+      if (Math.hypot(px - ST.tap.x, py - (ST.tap.y + 8)) < 26) return { kind: 'tap', x: ST.tap.x, y: ST.tap.y };
+      if (Math.hypot(px - ST.fryer.x, py - (ST.fryer.y + 8)) < 26) return { kind: 'fryer', x: ST.fryer.x, y: ST.fryer.y };
+      if (Math.hypot(px - ST.bin.x, py - (ST.bin.y + 8)) < 22) return { kind: 'bin', x: ST.bin.x, y: ST.bin.y };
+      let best = null, bd = 1e9; TB.forEach(([x, y], i) => { const d = Math.hypot(px - x, (py - (y - 10)) * 0.8); if (d < 24 && d < bd) { bd = d; best = { kind: 'table', i, x, y: y + 4 }; } });
+      return best;
     }
-    release() { this.hold = null; }
+    click(ptr) {
+      if (G.typing || G.modalOpen || this.phase !== 'play') return;
+      const t = this.pick(ptr.worldX, ptr.worldY); if (!t) return;
+      if (t.kind === 'bin') { if (this.tray.b + this.tray.s) { this.tray = { b: 0, s: 0 }; this.trayOrder = []; G.audio.sfx('hit'); this.say('Bandeja vacía 🗑', 1.2); } return; }
+      if (t.kind === 'tap' || t.kind === 'fryer') {
+        if (this.tray.b + this.tray.s >= P.CAP) { this.say('¡Bandeja llena! (caben ' + P.CAP + ') · entrega o tírala al basurero', 1.4); return; }
+        const k = t.kind === 'tap' ? 'b' : 's'; this.tray[k]++; this.trayOrder.push(k); G.audio.sfx('pop'); this.pop(t.x, t.y + 16, k === 'b' ? '+🍺' : '+🍟', '#ffffff'); return;
+      }
+      if (this.peekMode) { this.peekAt(t.i); return; }
+      this.serve(t.i);
+    }
+    togglePeek() { if (this.phase !== 'play') return; if (this.peeks <= 0 && !this.peekMode) { this.say('Ya no te quedan usos de libreta', 1.5); return; } this.peekMode = !this.peekMode; this.say(this.peekMode ? '📖 Libreta: haz clic en la mesa que quieres recordar' : '', this.peekMode ? 3 : 0); }
     serve(i) {
       const r = this.sim.serve(i, this.tray), tb = this.tb[i];
       this.rebuildTrayOrder();
@@ -204,13 +215,12 @@
       if (r.full) { G.audio.sfx('ok'); this.pop(tb.x, tb.y - 40, '+' + r.pts, '#7fe08a'); } else { G.audio.sfx('pop'); this.pop(tb.x, tb.y - 40, '+' + r.pts + ' (¡falta algo!)', '#ffd24a'); }
     }
     rebuildTrayOrder() { const o = []; for (let i = 0; i < this.tray.b; i++) o.push('b'); for (let i = 0; i < this.tray.s; i++) o.push('s'); this.trayOrder = o; }
-    peek() {
-      if (G.typing || G.modalOpen || this.phase !== 'play') return;
+    peekAt(i) {
+      this.peekMode = false; const p = this.sim.pat[i];
+      if (!p || p.state !== 'wait') { this.say('Esa mesa no está esperando nada', 1.5); return; }
+      if (p.show > 0) { this.say('Su pedido aún se ve: ¡memorízalo!', 1.2); return; }
       if (this.peeks <= 0) { this.say('Ya no te quedan usos de libreta', 1.5); return; }
-      let best = -1, bd = 52; this.sim.pat.forEach((p, i) => { if (!p || p.state !== 'wait') return; const d = Math.hypot(this.me.x - TB[i][0], this.me.y - (TB[i][1] + 6)); if (d < bd) { bd = d; best = i; } });
-      if (best < 0) { this.say('Acércate a una mesa con un cliente esperando', 1.5); return; }
-      if (this.sim.pat[best].show > 0) { this.say('Su pedido aún se ve: ¡memorízalo!', 1.2); return; }
-      this.peeks--; this.peekI = best; this.peekT = 1.8; G.audio.sfx('click');
+      this.peeks--; this.peekI = i; this.peekT = 1.8; G.audio.sfx('click');
     }
     pop(x, y, txt, col) {
       const t = A.text(this, x, y, txt, 13, col).setDepth(6000); this.tweens.add({ targets: t, y: y - 14, alpha: 0, duration: 1100, onComplete: () => t.destroy() });
@@ -237,33 +247,13 @@
         else if (e.k === 'strike') { G.audio.sfx('hit'); this.cameras.main.shake(180, 0.006); this.say('¡Bar lleno! Se fue un cliente (' + S.strikes + '/' + P.STRIKES + ')', 2); }
       });
       if (this.peekT > 0) { this.peekT -= dt; if (this.peekT <= 0) this.peekI = -1; }
-      // servir (mantener E)
-      if (this.hold) {
-        if (this.target && ((this.hold.kind === 'b' && this.target.kind === 'tap') || (this.hold.kind === 's' && this.target.kind === 'fryer'))) {
-          if (this.tray.b + this.tray.s < P.CAP) { this.hold.p += dt; if (this.hold.p >= POUR[this.hold.kind]) { this.hold.p = 0; this.tray[this.hold.kind]++; this.trayOrder.push(this.hold.kind); G.audio.sfx('pop'); } }
-          else this.say('¡Bandeja llena! (caben ' + P.CAP + ')', 1.0);
-        } else this.hold.p = 0;
-      }
       this.sendT = (this.sendT || 0) + dt; if (this.sendT >= 1) { this.sendT = 0; mg.send('o_sc', { s: S.score }); }
       if (this.bot) this.opp.score = Math.round(this.bot.target * Math.pow(S.prog(), 1.1));
       if (S.over) this.endMatch();
     }
-    moveMe(dt) {
-      const a = this.me, K = this.keys; let vx = 0, vy = 0;
-      if (['play', 'count', 'ended'].includes(this.phase) && !G.typing && !G.modalOpen) { if (K.left.isDown || K.a.isDown) vx--; if (K.right.isDown || K.d.isDown) vx++; if (K.up.isDown || K.w.isDown) vy--; if (K.down.isDown || K.s.isDown) vy++; }
-      a.moving = !!(vx || vy);
-      if (a.moving) {
-        const l = Math.hypot(vx, vy), sp = SPEED * (this.tray.b + this.tray.s >= P.CAP ? 0.9 : 1) * dt;
-        const nx = Phaser.Math.Clamp(a.x + vx / l * sp, B.x0, B.x1); if (!this.hits(nx, a.y)) a.x = nx;
-        const ny = Phaser.Math.Clamp(a.y + vy / l * sp, B.y0, B.y1); if (!this.hits(a.x, ny)) a.y = ny;
-        a.dir = Math.abs(vx) >= Math.abs(vy) && vx ? (vx < 0 ? 'l' : 'r') : (vy < 0 ? 'u' : 'd'); a.t += dt * 1000;
-      }
-      // objetivo más cercano
-      let best = null, bd = 1e9;
-      const cand = (kind, x, y, r, i) => { const d = Math.hypot(a.x - x, a.y - y); if (d < r && d < bd) { bd = d; best = { kind, i, x, y }; } };
-      cand('tap', ST.tap.x, ST.tap.y, ST.tap.r); cand('fryer', ST.fryer.x, ST.fryer.y, ST.fryer.r); cand('bin', ST.bin.x, ST.bin.y, ST.bin.r);
-      TB.forEach(([x, y], i) => cand('table', x, y + 4, 28, i));
-      this.target = best;
+    moveMe(dt) {                                  // el mesero se queda tras la barra: todo es con clics
+      const a = this.me; a.x = 200; a.y = 150; a.dir = 'd'; a.moving = false;
+      const p = this.input.activePointer; this.target = this.phase === 'play' ? this.pick(p.worldX, p.worldY) : null;
     }
     hits(x, y) { return TB.some(([tx, ty]) => x > tx - 19 && x < tx + 19 && y > ty - 4 && y < ty + 10); }
 
@@ -282,7 +272,8 @@
       this.ring.clear(); if (this.target && this.phase === 'play') { const t = this.target, rr = t.kind === 'table' ? 15 : 13; this.ring.lineStyle(1.5, 0xffffff, 0.8 + Math.sin(time / 120) * 0.2).strokeEllipse(t.x, t.y + (t.kind === 'table' ? 8 : 6), rr * 2, rr * 0.8); }
       if (this.phase === 'play' && this.sayT <= 0) {
         const t = this.target; let h = '';
-        if (t) h = t.kind === 'tap' ? 'Mantén E: servir cerveza' : t.kind === 'fryer' ? 'Mantén E: servir salchipapas' : t.kind === 'bin' ? 'E: tirar la bandeja' : (S.pat[t.i] && S.pat[t.i].state === 'wait' ? 'E: entregar · Q: libreta' : '');
+        h = this.peekMode ? '📖 Libreta: clic en la mesa' : 'Clic: cerveza · salchipapas → bandeja · luego clic en la mesa';
+        if (t && !this.peekMode) h = t.kind === 'tap' ? 'Clic: +1 cerveza a la bandeja' : t.kind === 'fryer' ? 'Clic: +1 salchipapas a la bandeja' : t.kind === 'bin' ? 'Clic: tirar la bandeja' : (S.pat[t.i] && S.pat[t.i].state === 'wait' ? 'Clic: entregar el pedido' : 'Mesa vacía');
         this.hint.setText(h);
       }
       // mesas
@@ -306,7 +297,7 @@
       const left = Math.max(0, this.dur - S.t);
       this.hClock.setText('⏱ ' + fmt(left)).setColor(left < 15 ? '#ff7a7a' : '#ffffff');
       const occ = S.occupied(); this.hOcc.clear(); for (let k = 0; k < P.TABLES; k++) { this.hOcc.fillStyle(OUTL).fillRect(6 + k * 9, 58, 8, 6).fillStyle(k < occ ? (occ >= 7 ? 0xff5a5a : 0xffd24a) : 0x5a4a6a).fillRect(7 + k * 9, 59, 6, 4); }
-      this.hPeek.setText('Libreta ✎ ×' + this.peeks);
+      this.hPeek.setText('📖 Libreta ×' + this.peeks + (this.peekMode ? ' (elige mesa)' : '')).setBackgroundColor(this.peekMode ? '#7fe08a' : '#ffd24a');
       this.hScore.setText(S.score + ' pts'); this.hStr.setText('Strikes ' + '✖'.repeat(S.strikes) + '·'.repeat(P.STRIKES - S.strikes));
       this.hOpp.setText(G.state.partner.name + ': ' + (this.opp.score || 0));
       // bandeja (HUD inferior)

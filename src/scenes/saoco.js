@@ -14,17 +14,26 @@
   const G = window.G, A = G.art, W = G.W, H = G.H, Q = new URLSearchParams(location.search), mg = G.mg;
   const OUTL = 0x2b1b30, DIR = ['l', 'd', 'u', 'r'], LCOL = [0xff7aa8, 0x6fbfff, 0x7fe08a, 0xffd24a], LX = [161, 187, 213, 239];
   const RY = 172, TOPY = 34, AHEAD = 14, PPS = (RY - TOPY) / AHEAD, PHL = 32;
+  const WF = [0.095, 0.2], WN = [0.08, 0.16], WD = [0.07, 0.14];
   const SONGS = {
-    facil:   { name: 'Habanera de Lince', style: 'habanera', np: 10, win: [0.095, 0.2], gap: 4, label: 'Fácil' },
-    normal:  { name: 'Salsa Saoco',       style: 'salsa',    np: 12, win: [0.08, 0.16],  gap: 2, label: 'Normal' },
-    dificil: { name: 'Charanga Ccelli',   style: 'charanga', np: 14, win: [0.07, 0.14],  gap: 1, label: 'Difícil' }
+    habanera: { name: 'Habanera de Lince',  style: 'habanera',       diff: 'facil',   np: 10, win: WF, gap: 4, label: 'Fácil' },
+    romantica:{ name: 'Salsa Romántica',    style: 'salsaRomantica', diff: 'facil',   np: 10, win: WF, gap: 4, label: 'Fácil' },
+    latinpop: { name: 'Latin Pop Lima',     style: 'latinpop',       diff: 'facil',   np: 10, win: WF, gap: 4, label: 'Fácil' },
+    salsa:    { name: 'Salsa Saoco',        style: 'salsa',          diff: 'normal',  np: 12, win: WN, gap: 2, label: 'Normal' },
+    electro:  { name: 'Electro Saoco',      style: 'electro',        diff: 'normal',  np: 12, win: WN, gap: 2, label: 'Normal' },
+    charanga: { name: 'Charanga Ccelli',    style: 'charanga',       diff: 'dificil', np: 14, win: WD, gap: 1, label: 'Difícil' },
+    timba:    { name: 'Timba de Barranco',  style: 'timba',          diff: 'dificil', np: 14, win: WD, gap: 1, label: 'Difícil' },
+    electro2: { name: 'Electro Turbo',      style: 'electro',        diff: 'dificil', np: 14, win: WD, gap: 1, label: 'Difícil' }
   };
+  G.SALSA_NAMES = {}; Object.keys(SONGS).forEach(k => { G.SALSA_NAMES['salsa_' + k] = SONGS[k].name + ' · ' + SONGS[k].label; });
+  /* competitividad de las otras parejas: cuánto fallan (mult) y qué tan bien bailan (q) */
+  const COMP = { relax: { name: 'Relajadas', mult: 1.7, q: 0.3 }, normal: { name: 'Normales', mult: 1, q: 0.6 }, comp: { name: 'Competitivas', mult: 0.45, q: 0.85 }, imba: { name: 'Imbatibles', mult: 0.1, q: 1 } };
   const NPC = [{ name: 'Los Rumberos', pr: { facil: 0.2, normal: 0.3, dificil: 0.4 } }, { name: 'Las Pimienta', pr: { facil: 0.3, normal: 0.4, dificil: 0.5 } }];
   const KEYMAP = { ArrowLeft: 0, ArrowDown: 1, ArrowUp: 2, ArrowRight: 3, KeyA: 0, KeyS: 1, KeyW: 2, KeyD: 3 };
 
   /* ---------- coreografía (idéntica en las dos laptops: sale de la semilla) ---------- */
-  function makeChart(seed, diff) {
-    const R = mg.rng((seed ^ 0x5a0c0) >>> 0), S = SONGS[diff], N = S.np, out = []; let prev = -1, rep = 0;
+  function makeChart(seed, song) {
+    const S = SONGS[song], diff = S.diff, R = mg.rng((seed ^ 0x5a0c0) >>> 0), N = S.np, out = []; let prev = -1, rep = 0;
     for (let p = 0; p < N; p++) {
       const prog = N > 1 ? p / (N - 1) : 0; let offs = [0, 4, 8, 16, 20, 24];             // el paso básico: 1-2-3 (se descansa en el 4)
       const add = (o, pr) => { if (R() < pr) offs.push(o); };
@@ -67,14 +76,14 @@
     constructor() { super('saoco'); }
     create() {
       A.emoteTextures(this.game); G.refreshTextures(); makeTextures(this); makeNpcTextures(this);
-      this.phase = 'lobby'; this.mode = Q.get('smode') === 'dupla' ? 'dupla' : 'solo'; this.diff = SONGS[Q.get('sdiff')] ? Q.get('sdiff') : 'normal';
+      this.phase = 'lobby'; this.mode = Q.get('smode') === 'solo' ? 'solo' : 'dupla'; { const sd = Q.get('sdiff') || Q.get('ssong'); this.song = SONGS[sd] ? sd : ({ facil: 'habanera', normal: 'salsa', dificil: 'charanga' }[sd] || 'salsa'); this.diff = SONGS[this.song].diff; this.comp = COMP[Q.get('scomp')] ? Q.get('scomp') : 'normal'; }
       this.ready = { me: false, partner: false }; this.ui = []; this.notes = []; this.over = false; this.stat = {}; this.partnerFin = null; this.oppScore = 0; this.resolved = false;
       this.bt = 0; this.lastT = performance.now(); this.dtStep = 0.15; this.flash = [0, 0, 0, 0]; this.jump = 0; this.pop = { t: 0, txt: '', col: '#fff' };
       this.isHost = () => G.solo || G.net.role === 'host';
       this.setupInput(); this.drawStage(); this.makeActors();
-      mg.bind(this, [['s_cfg', d => { if (this.phase === 'lobby') { this.mode = d.mode; this.diff = d.diff; this.applySong(); this.drawLobby(); } }],
+      mg.bind(this, [['s_cfg', d => { if (this.phase === 'lobby') { this.mode = d.mode; this.song = SONGS[d.song] ? d.song : this.song; this.diff = SONGS[this.song].diff; this.comp = COMP[d.comp] ? d.comp : this.comp; this.applySong(); this.drawLobby(); } }],
         ['s_ready', d => { this.ready.partner = !!d.r; if (this.phase === 'lobby') { this.drawLobby(); this.tryStart(); } }],
-        ['s_go', d => { if (this.phase === 'lobby') this.beginMatch(d.seed, d.mode, d.diff); }],
+        ['s_go', d => { if (this.phase === 'lobby') this.beginMatch(d.seed, d.mode, d.song, d.comp); }],
         ['s_ev', d => { if (this.isHost()) this.hostEv(d, G.state.partner.id); }], ['s_cmd', d => this.onCmd(d)], ['s_stat', d => { this.stat[d.who] = d.k; }],
         ['s_end', d => this.showDuoOver(d)], ['s_sc', d => { this.oppScore = d.s; }], ['s_fin', d => this.onPartnerFin(d)], ['s_again', () => this.scene.restart()]]);
       this.applySong(); this.drawLobby(); this.sendCfg();
@@ -82,14 +91,13 @@
       this.events.once('shutdown', () => { this.keyH && this.input.keyboard.off('keydown', this.keyH); });
       if (G.solo && Q.get('sauto') === '1') this.time.delayedCall(600, () => { this.ready.me = true; this.tryStart(); });
     }
-    sendCfg() { mg.send('s_cfg', { mode: this.mode, diff: this.diff }); }
-    applySong() { G.audio.setStyle(SONGS[this.diff].style); }
+    sendCfg() { mg.send('s_cfg', { mode: this.mode, song: this.song, comp: this.comp }); }
+    applySong() { G.audio.setStyle(SONGS[this.song].style); }
 
     setupInput() {
       this.keyH = ev => {
         if (G.typing || G.modalOpen || ev.repeat) return;
         const l = KEYMAP[ev.code]; if (l !== undefined) { this.pressLane(l); return; }
-        if (ev.code === 'Escape' && (this.phase === 'lobby' || this.phase === 'over')) G.flow.openMap();
       };
       this.input.keyboard.on('keydown', this.keyH);
     }
@@ -112,26 +120,28 @@
       this.hSong = t(6, 30, '', '#ffd1e0', { fontSize: '12px' }); this.hScore = t(394, 30, '', '#ffd24a', { fontSize: '16px' }).setOrigin(1, 0);
       this.hSub = t(394, 48, '', '#bfeaff', { fontSize: '12px' }).setOrigin(1, 0); this.hCombo = A.text(this, 200, 190, '', 16, '#ffffff').setDepth(5000);
       this.hPop = A.text(this, 200, 78, '', 20, '#ffffff').setDepth(5000); this.hBanner = A.text(this, 200, 62, '', 14, '#ffffff').setDepth(5000);
-      this.hSt = [t(72, 121, '', '#ffffff', { fontSize: '12px' }).setOrigin(0.5), t(328, 121, '', '#ffffff', { fontSize: '12px' }).setOrigin(0.5)];
+      this.hSt = [t(54, 112, '', '#ffffff', { fontSize: '11px' }).setOrigin(0.5), t(100, 112, '', '#ffffff', { fontSize: '11px' }).setOrigin(0.5)];
+      this.cnt = ['1', '2', '3', '·', '5', '6', '7', '·'].map((c, i) => this.add.text(143 + i * 16.3, 194, c, { fontFamily: 'VT323', fontSize: '16px', color: '#ffffff', stroke: '#2b1b30', strokeThickness: 3 }).setOrigin(0.5).setDepth(5000));
       this.rows = [0, 1, 2].map(i => t(394, 30 + i * 12, '', '#ffffff', { fontSize: '12px' }).setOrigin(1, 0));
       this.barG = this.add.graphics().setDepth(5000);
       this.setHud(false);
     }
-    setHud(v) { [this.hSong, this.hScore, this.hSub, this.hCombo, this.hPop, this.hBanner, this.barG].forEach(o => o.setVisible(v)); this.hSt.forEach(o => o.setVisible(v)); this.rows.forEach(o => o.setVisible(v)); }
+    setHud(v) { [this.hSong, this.hScore, this.hSub, this.hCombo, this.hPop, this.hBanner, this.barG].forEach(o => o.setVisible(v)); this.hSt.forEach(o => o.setVisible(v)); (this.cnt || []).forEach(o => o.setVisible(v)); this.rows.forEach(o => o.setVisible(v)); }
     makeActors() {
       const mk = (who, x) => {
         const s = this.add.sprite(x, 192, 'char_' + who, 'd0').setOrigin(0.5, 1).setScale(2).setDepth(10);
         const sh = this.add.ellipse(x, 191, 30, 8, 0x000000, 0.3).setDepth(9);
-        const n = this.add.text(x, 108, (G.state[who === 'me' ? 'me' : 'partner'].name || ''), { fontFamily: 'VT323', fontSize: '13px', color: '#ffffff', stroke: '#2b1b30', strokeThickness: 3 }).setOrigin(0.5).setDepth(11);
+        const n = this.add.text(x, 124, (G.state[who === 'me' ? 'me' : 'partner'].name || ''), { fontFamily: 'VT323', fontSize: '13px', color: '#ffffff', stroke: '#2b1b30', strokeThickness: 3 }).setOrigin(0.5).setDepth(11);
         return { spr: s, sh, name: n, x, j: 0 };
       };
-      this.dm = mk('me', 72); this.dp = mk('partner', 328);
-      this.npcs = [[110, 110, 'npc_dance0'], [128, 110, 'npc_dance1'], [270, 110, 'npc_dance2'], [288, 110, 'npc_dance3']].map(([x, y, k], i) => ({ spr: this.add.sprite(x, y + 30, k, 'd0').setOrigin(0.5, 1).setDepth(6).setVisible(false), x, y: y + 30 }));
+      this.dm = mk('me', 54); this.dp = mk('partner', 100);
+      this.npcs = [[276, 150, 'npc_dance0'], [304, 150, 'npc_dance1'], [338, 150, 'npc_dance2'], [366, 150, 'npc_dance3']].map(([x, y, k], i) => ({ spr: this.add.sprite(x, y + 20, k, 'd0').setOrigin(0.5, 1).setScale(1.5).setDepth(6).setVisible(false), x, y: y + 20 }));
+      this.npcNames = [[290, 'Los Rumberos'], [352, 'Las Pimienta']].map(([x, n]) => this.add.text(x, 104, n, { fontFamily: 'VT323', fontSize: '12px', color: '#ffd1e0', stroke: '#2b1b30', strokeThickness: 3 }).setOrigin(0.5).setDepth(11).setVisible(false));
     }
 
     /* ---------- reloj de la música ---------- */
     advanceClock(dt) {
-      this.dtStep = 60 / G.audio.bpmOf(SONGS[this.diff].style) / 4; this.bt += dt / this.dtStep;
+      this.dtStep = 60 / G.audio.bpmOf(SONGS[this.song].style) / 4; this.bt += dt / this.dtStep;
       const a = G.audio.clock(); if (a && Math.abs(a.dt - this.dtStep) < 1e-6) { const err = a.step + this.offMs() / 1000 / this.dtStep - this.bt; if (Math.abs(err) > 6) this.bt = a.step; else this.bt += err * 0.12; }
       this.lastT = performance.now();
     }
@@ -147,45 +157,48 @@
       add(A.text(this, 200, 38, '💃 ACADEMIA SAOCO · CLASE DE SALSA', 15, '#ffd24a').setDepth(D + 1));
       T(200, 48, this.mode === 'solo' ? 'SOLITARIO (VS yo): cada uno baila la canción entera e intenta superar su PROPIO récord.'
         : 'DUPLA: por frases. Si uno se equivoca, ¡los DOS repiten! Compitan contra Los Rumberos y Las Pimienta.', '#fff3d6', 12, { align: 'center', lineSpacing: -2, wordWrap: { width: 316 } });
-      T(200, 74, 'Flechas ← ↓ ↑ → (o A S W D) cuando lleguen al círculo', '#9fe0cf');
-      T(200, 86, 'Modo:', '#ffffff');
-      [['solo', 'Solitario (VS yo)'], ['dupla', 'Dupla (los dos)']].forEach(([k, t], i) => mg.btn(this, add, 140 + i * 120, 107, 112, 18, t, this.mode === k ? 0xffd24a : 0xbfeaff, () => { this.mode = k; this.sendCfg(); this.drawLobby(); }, D, 13));
-      T(200, 119, 'Canción / dificultad:', '#ffffff');
-      Object.keys(SONGS).forEach((k, i) => mg.btn(this, add, 96 + i * 104, 140, 100, 18, SONGS[k].label + ' · ' + SONGS[k].name.split(' ')[0], this.diff === k ? 0xffd24a : 0xbfeaff, () => { this.diff = k; this.applySong(); this.sendCfg(); this.drawLobby(); }, D, 12));
-      // ajuste fino de sincronía (guardado en el navegador)
-      T(96, 156, 'Ajuste de ritmo:', '#9fe0cf', 12);
+      T(200, 68, 'Flechas o A S W D al llegar al círculo · ritmo 1-2-3 _ 5-6-7 _', '#9fe0cf', 11, { wordWrap: { width: 330 }, align: 'center' });
+      T(60, 80, 'Modo:', '#ffffff', 12);
+      [['solo', 'Solitario (VS yo)'], ['dupla', 'Dupla (los dos)']].forEach(([k, t], i) => mg.btn(this, add, 150 + i * 104, 86, 100, 14, t, this.mode === k ? 0xffd24a : 0xbfeaff, () => { this.mode = k; this.sendCfg(); this.drawLobby(); }, D, 12));
+      T(200, 98, 'Canción (dificultad):', '#ffffff', 12);
+      Object.keys(SONGS).forEach((k, i) => { const col = i % 4, row = (i / 4) | 0; mg.btn(this, add, 80 + col * 80, 115 + row * 16, 77, 14, SONGS[k].name.replace(/ (de|Lima).*$/, '').slice(0, 15) + ' ' + SONGS[k].label[0], this.song === k ? 0xffd24a : 0xbfeaff, () => { this.song = k; this.diff = SONGS[k].diff; this.applySong(); this.sendCfg(); this.drawLobby(); }, D, 10); });
+      if (this.mode === 'dupla') {
+        T(60, 148, 'Otras parejas:', '#ffffff', 12);
+        Object.keys(COMP).forEach((k, i) => mg.btn(this, add, 138 + i * 62, 154, 60, 14, COMP[k].name, this.comp === k ? 0xffd24a : 0xbfeaff, () => { this.comp = k; this.sendCfg(); this.drawLobby(); }, D, 10));
+      } else T(200, 148, 'Supera tu propio récord de esta canción', '#ffd1e0', 11);
+      T(96, 164, 'Ajuste de ritmo:', '#9fe0cf', 11);
       const adj = d => { G.state.settings.danceOff = Math.max(-300, Math.min(300, this.offMs() + d)); G.save(); this.drawLobby(); };
-      mg.btn(this, add, 160, 163, 20, 13, '−', 0xbfeaff, () => adj(-20), D, 14);
-      T(190, 156, this.offMs() + ' ms', '#ffffff', 13);
-      mg.btn(this, add, 222, 163, 20, 13, '+', 0xbfeaff, () => adj(20), D, 14);
-      T(306, 157, '− atrasa · + adelanta', '#ffd1e0', 11);
+      mg.btn(this, add, 160, 169, 18, 11, '−', 0xbfeaff, () => adj(-20), D, 12);
+      T(190, 164, this.offMs() + ' ms', '#ffffff', 12);
+      mg.btn(this, add, 220, 169, 18, 11, '+', 0xbfeaff, () => adj(20), D, 12);
+      T(294, 165, '− atrasa + adelanta', '#ffd1e0', 10);
       const nm = G.state.me.name || 'Tú', pn = G.state.partner.name || 'Pareja';
-      mg.btn(this, add, 110, 184, 104, 20, this.ready.me ? '✔ ¡Listo!' : '¡Estoy listo!', this.ready.me ? 0x7fd1ae : 0xff7aa8, () => { this.ready.me = !this.ready.me; mg.send('s_ready', { r: this.ready.me }); this.drawLobby(); this.tryStart(); }, D);
-      add(this.add.text(172, 176, (G.solo ? pn + ' (bot) 🤖: listo' : pn + (this.ready.partner ? ': ✔ listo' : ': esperando…')) + '\n' + nm + (this.ready.me ? ': ✔ listo' : ''), { fontFamily: 'VT323', fontSize: '12px', color: '#fff3d6', lineSpacing: -1 }).setOrigin(0, 0).setDepth(D + 1));
-      mg.btn(this, add, 334, 184, 62, 20, '◀ Mapa', 0xffffff, () => G.flow.openMap(), D, 13);
+      mg.btn(this, add, 110, 187, 104, 18, this.ready.me ? '✔ ¡Listo!' : '¡Estoy listo!', this.ready.me ? 0x7fd1ae : 0xff7aa8, () => { this.ready.me = !this.ready.me; mg.send('s_ready', { r: this.ready.me }); this.drawLobby(); this.tryStart(); }, D);
+      add(this.add.text(172, 179, (G.solo ? pn + ' (bot) 🤖: listo' : pn + (this.ready.partner ? ': ✔ listo' : ': esperando…')) + '\n' + nm + (this.ready.me ? ': ✔ listo' : ''), { fontFamily: 'VT323', fontSize: '12px', color: '#fff3d6', lineSpacing: -1 }).setOrigin(0, 0).setDepth(D + 1));
+      mg.btn(this, add, 334, 187, 62, 18, '◀ Igloo', 0xffffff, () => G.flow.home(), D, 13);
     }
     tryStart() {
       if (this.phase !== 'lobby' || !this.ready.me) return;
-      if (G.solo) { this.beginMatch(Math.floor(Math.random() * 2 ** 31), this.mode, this.diff); return; }
-      if (this.ready.partner && G.net.role === 'host') { const seed = Math.floor(Math.random() * 2 ** 31); mg.send('s_go', { seed, mode: this.mode, diff: this.diff }); this.beginMatch(seed, this.mode, this.diff); }
+      if (G.solo) { this.beginMatch(Math.floor(Math.random() * 2 ** 31), this.mode, this.song, this.comp); return; }
+      if (this.ready.partner && G.net.role === 'host') { const seed = Math.floor(Math.random() * 2 ** 31); mg.send('s_go', { seed, mode: this.mode, song: this.song, comp: this.comp }); this.beginMatch(seed, this.mode, this.song, this.comp); }
     }
 
     /* ---------- inicio de la partida ---------- */
-    beginMatch(seed, mode, diff) {
-      this.ui.forEach(o => o.destroy()); this.ui = []; this.mode = mode; this.diff = diff; this.seed = seed; this.applySong();
-      this.chart = makeChart(seed, diff); this.win = SONGS[diff].win; this.notes = []; this.over = false; this.resolved = false; this.partnerFin = null; this.oppScore = 0; this.stat = {};
+    beginMatch(seed, mode, song, comp) {
+      this.ui.forEach(o => o.destroy()); this.ui = []; this.mode = mode; this.song = SONGS[song] ? song : 'salsa'; const diff = this.diff = SONGS[this.song].diff; this.comp = COMP[comp] ? comp : 'normal'; this.seed = seed; this.applySong();
+      this.chart = makeChart(seed, this.song); this.win = SONGS[this.song].win; this.myErr = 0; this.errBy = {}; this.errSaved = false; this.notes = []; this.over = false; this.resolved = false; this.partnerFin = null; this.oppScore = 0; this.stat = {};
       this.score = 0; this.combo = 0; this.maxCombo = 0; this.st = { perfect: 0, good: 0, miss: 0, wrong: 0 };
-      this.myBest = (G.state.records.best['salsa_' + diff] || {})[G.state.me.id] || 0;
-      this.setHud(true); this.npcs.forEach(n => n.spr.setVisible(mode === 'dupla'));
-      this.dtStep = 60 / G.audio.bpmOf(SONGS[diff].style) / 4; const a = G.audio.clock(); if (a) this.bt = a.step; this.lastT = performance.now();
+      this.myBest = (G.state.records.best['salsa_' + this.song] || {})[G.state.me.id] || 0;
+      this.setHud(true); this.npcs.forEach(n => n.spr.setVisible(mode === 'dupla')); this.npcNames.forEach(n => n.setVisible(mode === 'dupla'));
+      this.dtStep = 60 / G.audio.bpmOf(SONGS[this.song].style) / 4; const a = G.audio.clock(); if (a) this.bt = a.step; this.lastT = performance.now();
       if (mode === 'solo') {
         this.S0 = this.barAfter(40); this.lastStep = this.S0 + (this.chart.length - 1) * PHL + Math.max(...this.chart[this.chart.length - 1].map(n => n.off));
         this.chart.forEach((ph, p) => ph.forEach(n => this.notes.push({ step: this.S0 + p * PHL + n.off, lane: n.lane, done: false, res: null, ph: p })));
         this.phase = 'dance'; this.say('¡Prepárate! Empieza en 4 tiempos…', 3);
-        if (G.solo) this.bot = { target: { facil: 7500, normal: 11000, dificil: 14500 }[diff] * (0.8 + 0.4 * Math.random()) };
+        if (G.solo) this.bot = { target: { facil: 7500, normal: 11000, dificil: 14500 }[diff] * (0.8 + 0.4 * Math.random()) * ({ relax: 0.7, normal: 1, comp: 1.15, imba: 1.3 }[this.comp]) };
       } else {
         this.ph = 0; this.att = 0; this.retries = 0; this.phDone = 0; this.duoPts = 0; this.phr = null; this.pendCmd = null;
-        const R2 = mg.rng((seed ^ 0xbeef) >>> 0); this.npcPer = NPC.map(n => this.chart.map(() => { let r = 0; while (R2() < n.pr[diff] && r < 4) r++; return Math.max(20, 100 - 25 * r) + Math.round(20 * (0.5 + R2() * 0.45)); }));
+        const R2 = mg.rng((seed ^ 0xbeef) >>> 0); const CP = COMP[this.comp]; this.npcPer = NPC.map(n => this.chart.map(() => { let r = 0; while (R2() < n.pr[diff] * CP.mult && r < 4) r++; return Math.max(20, 100 - 25 * r) + Math.round(20 * Math.min(1, CP.q + R2() * 0.12)); }));
         this.phase = 'dance'; this.say('¡Prepárense! Si uno se equivoca, ¡los dos repiten!', 3);
         if (this.isHost()) this.time.delayedCall(900, () => this.hostCmd('go'));
       }
@@ -209,11 +222,11 @@
     }
     hitFx(l, perfect) { const g = this.hitG; this.fx = this.fx || []; this.fx.push({ l, t: 0.25, c: perfect ? 0xffd24a : 0xbfeaff }); }
     onMiss(n) {
-      this.st.miss++; this.combo = 0; this.popup('Fallaste', '#ff7a7a'); G.audio.sfx('hit');
+      this.myErr++; this.st.miss++; this.combo = 0; this.popup('Fallaste', '#ff7a7a'); G.audio.sfx('hit');
       if (this.mode === 'dupla') this.phraseFail();
     }
     onWrong() {
-      this.st.wrong++; this.combo = 0; this.popup('¡Flecha equivocada!', '#ff7a7a'); G.audio.sfx('hit');
+      this.myErr++; this.st.wrong++; this.combo = 0; this.popup('¡Flecha equivocada!', '#ff7a7a'); G.audio.sfx('hit');
       if (this.mode === 'dupla') this.phraseFail();
     }
     popup(t, c) { this.pop = { t: 0.7, txt: t, col: c }; }
@@ -244,14 +257,15 @@
       const my = G.state.me.id, o = { score: this.score, perfect: this.st.perfect, good: this.st.good, miss: this.st.miss + this.st.wrong, combo: this.maxCombo };
       this.mine = o; mg.send('s_fin', o);
       if (G.solo) { this.partnerFin = { score: Math.round(this.bot.target * (0.92 + 0.16 * Math.random())), perfect: 0, good: 0, miss: 0, combo: 0 }; this.hostSaveBest(G.state.partner.id, this.partnerFin.score); }
-      if (this.isHost()) this.hostSaveBest(my, o.score);
+      if (this.isHost()) { this.hostSaveBest(my, o.score); }
+      if (this.isHost() && !this.errSaved && G.solo) { this.errSaved = true; G.addSalsaErr({ [my]: o.miss, [G.state.partner.id]: 0 }); }
       this.isNewBest = o.score > this.myBest; G.audio.sfx('win'); this.showSoloOver();
     }
-    onPartnerFin(d) { this.partnerFin = d; if (this.isHost() && this.mode === 'solo') this.hostSaveBest(G.state.partner.id, d.score); if (this.phase === 'over' && this.mode === 'solo') this.showSoloOver(); }
-    hostSaveBest(id, score) { if (this.mode === 'solo') G.recordBest('salsa_' + this.diff, id, score); }
+    onPartnerFin(d) { this.partnerFin = d; if (this.isHost() && this.mode === 'solo') { this.hostSaveBest(G.state.partner.id, d.score); if (!G.solo && this.mine && !this.errSaved) { this.errSaved = true; const e = {}; e[G.state.me.id] = this.mine.miss; e[G.state.partner.id] = d.miss; G.addSalsaErr(e); } } if (this.phase === 'over' && this.mode === 'solo') this.showSoloOver(); }
+    hostSaveBest(id, score) { if (this.mode === 'solo') G.recordBest('salsa_' + this.song, id, score); }
     showSoloOver() {
-      this.ui.forEach(o => o.destroy()); this.ui = []; this.setHud(false); this.npcs.forEach(n => n.spr.setVisible(false));
-      const add = o => { this.ui.push(o); return o; }, D = 9500, o = this.mine, pf = this.partnerFin, S = SONGS[this.diff];
+      this.ui.forEach(o => o.destroy()); this.ui = []; this.setHud(false); this.npcs.forEach(n => n.spr.setVisible(false)); this.npcNames.forEach(n => n.setVisible(false));
+      const add = o => { this.ui.push(o); return o; }, D = 9500, o = this.mine, pf = this.partnerFin, S = SONGS[this.song];
       mg.panel(this, add, 48, 28, 304, 168, D);
       add(A.text(this, 200, 46, '💃 ¡TERMINÓ LA CLASE!', 17, '#ffd24a').setDepth(D + 1));
       add(this.add.text(200, 62, S.name + ' · ' + S.label, { fontFamily: 'VT323', fontSize: '12px', color: '#ffd1e0' }).setOrigin(0.5, 0).setDepth(D + 1));
@@ -259,8 +273,10 @@
       add(this.add.text(200, 104, '¡Perfectos ' + o.perfect + ' · Bien ' + o.good + ' · Fallos ' + o.miss + ' · Mejor combo ' + o.combo, { fontFamily: 'VT323', fontSize: '13px', color: '#9fe0cf' }).setOrigin(0.5, 0).setDepth(D + 1));
       add(this.add.text(200, 120, this.isNewBest ? '🏅 ¡NUEVO RÉCORD PERSONAL! (antes ' + this.myBest + ')' : 'Tu récord: ' + Math.max(this.myBest, 0) + (this.myBest ? ' — ¡a superarte!' : ''), { fontFamily: 'VT323', fontSize: '14px', color: this.isNewBest ? '#ffd24a' : '#ffd1e0' }).setOrigin(0.5, 0).setDepth(D + 1));
       add(this.add.text(200, 138, (G.state.partner.name || 'Pareja') + ': ' + (pf ? pf.score + ' pts' : 'todavía bailando…'), { fontFamily: 'VT323', fontSize: '14px', color: '#bfeaff' }).setOrigin(0.5, 0).setDepth(D + 1));
-      mg.btn(this, add, 148, 172, 92, 22, '↻ Otra vez', 0xffd24a, () => { mg.send('s_again', {}); this.scene.restart(); }, D);
-      mg.btn(this, add, 252, 172, 92, 22, '◀ Al mapa', 0xff7aa8, () => G.flow.openMap(), D);
+      const eM = o.miss, eP = pf ? pf.miss : '…', ed = G.state.me.id === 'dani' ? [eM, eP] : [eP, eM];
+      add(this.add.text(200, 154, '😅 Errores: ' + mg.nameOf('dani') + ' ' + ed[0] + ' · ' + mg.nameOf('sebas') + ' ' + ed[1], { fontFamily: 'VT323', fontSize: '13px', color: '#ffd1e0' }).setOrigin(0.5, 0).setDepth(D + 1));
+      mg.btn(this, add, 148, 180, 92, 20, '↻ Otra vez', 0xffd24a, () => { mg.send('s_again', {}); this.scene.restart(); }, D);
+      mg.btn(this, add, 252, 180, 92, 20, '◀ Al igloo', 0xff7aa8, () => G.flow.home(), D);
     }
 
     /* ---------- modo dupla: frases ---------- */
@@ -282,13 +298,13 @@
       this.say('¡Listo! Esperando a ' + (G.state.partner.name || 'tu pareja') + '…', 3); this.sendEv('done', pf);
     }
     sendEv(k, pf) {
-      const e = { ph: this.ph, att: this.att, k, pf: pf || 0 };
+      const e = { ph: this.ph, att: this.att, k, pf: pf || 0, err: this.myErr };
       if (this.isHost()) this.hostEv(e, G.state.me.id); else mg.send('s_ev', e);
     }
     /* el anfitrión es el árbitro: cuenta intentos, puntos y manda el siguiente paso */
     hostEv(e, from) {
       if (this.phase !== 'dance' || this.mode !== 'dupla' || e.ph !== this.ph || e.att !== this.att) return;
-      this.stat[from] = e.k; mg.send('s_stat', { who: from, k: e.k });
+      this.stat[from] = e.k; mg.send('s_stat', { who: from, k: e.k }); this.errBy[from] = e.err || 0;
       if (e.k === 'fail') { this.doneBy = {}; this.retries++; this.att++; this.hostCmd('retry'); return; }
       this.doneBy = this.doneBy || {}; this.doneBy[from] = e.pf; const my = G.state.me.id, pi = G.state.partner.id;
       if (this.doneBy[my] === undefined || this.doneBy[pi] === undefined) return;
@@ -314,23 +330,26 @@
     }
     duoName() { const a = G.state.me.name || 'Tú', b = G.state.partner.name || 'Pareja'; return a + ' y ' + b; }
     hostEnd() {
-      const d = { pts: this.duoPts, done: this.chart.length, retries: 0, seed: this.seed }; mg.send('s_end', d); this.showDuoOver(d);
+      this.errBy[G.state.me.id] = this.myErr; const d = { pts: this.duoPts, done: this.chart.length, retries: 0, seed: this.seed, err: { dani: this.errBy.dani || 0, sebas: this.errBy.sebas || 0 } }; mg.send('s_end', d); this.showDuoOver(d);
     }
     showDuoOver(d) {
       if (this.over) return; this.over = true; this.phase = 'over'; this.duoPts = d.pts; this.phDone = d.done; this.notes = []; this.phr = null;
       if (this.cmdTimer) { this.cmdTimer.remove(false); this.cmdTimer = null; }
-      this.ui.forEach(o => o.destroy()); this.ui = []; this.setHud(false); this.npcs.forEach(n => n.spr.setVisible(false));
+      this.ui.forEach(o => o.destroy()); this.ui = []; this.setHud(false); this.npcs.forEach(n => n.spr.setVisible(false)); this.npcNames.forEach(n => n.setVisible(false));
       const rows = this.standings(), rank = rows.findIndex(r => r.me) + 1;
       if (this.isHost() && rank === 1) { G.recordWin('salsa', 'dani', d.pts); G.recordWin('salsa', 'sebas', d.pts); }
+      if (this.isHost() && d.err && !this.errSaved) { this.errSaved = true; G.addSalsaErr(d.err); }
       G.audio.sfx(rank === 1 ? 'win' : 'ok');
       const add = o => { this.ui.push(o); return o; }, D = 9500, medal = ['🥇', '🥈', '🥉'];
       mg.panel(this, add, 48, 28, 304, 168, D);
       add(A.text(this, 200, 46, rank === 1 ? '🏆 ¡PRIMER LUGAR!' : rank === 2 ? '¡SEGUNDO LUGAR!' : '¡TERCER LUGAR!', 17, '#ffd24a').setDepth(D + 1));
-      add(this.add.text(200, 62, SONGS[this.diff].name + ' · ' + SONGS[this.diff].label, { fontFamily: 'VT323', fontSize: '12px', color: '#ffd1e0' }).setOrigin(0.5, 0).setDepth(D + 1));
+      add(this.add.text(200, 62, SONGS[this.song].name + ' · ' + SONGS[this.song].label, { fontFamily: 'VT323', fontSize: '12px', color: '#ffd1e0' }).setOrigin(0.5, 0).setDepth(D + 1));
       rows.forEach((r, i) => add(this.add.text(200, 84 + i * 18, medal[i] + ' ' + r.name + ' — ' + r.pts + ' pts', { fontFamily: 'VT323', fontSize: '15px', color: r.me ? '#ffd24a' : '#fff3d6' }).setOrigin(0.5, 0).setDepth(D + 1)));
-      add(this.add.text(200, 142, rank === 1 ? '¡Récord guardado para los dos! 💜' : 'Menos repeticiones y más perfectos = más puntos', { fontFamily: 'VT323', fontSize: '13px', color: '#9fe0cf' }).setOrigin(0.5, 0).setDepth(D + 1));
-      mg.btn(this, add, 148, 172, 92, 22, '↻ Otra vez', 0xffd24a, () => { mg.send('s_again', {}); this.scene.restart(); }, D);
-      mg.btn(this, add, 252, 172, 92, 22, '◀ Al mapa', 0xff7aa8, () => G.flow.openMap(), D);
+      const er = d.err || { dani: 0, sebas: 0 };
+      add(this.add.text(200, 146, '😅 Errores: ' + mg.nameOf('dani') + ' se equivocó ' + er.dani + (er.dani === 1 ? ' vez' : ' veces') + ' · ' + mg.nameOf('sebas') + ' ' + er.sebas, { fontFamily: 'VT323', fontSize: '14px', color: '#ffd1e0' }).setOrigin(0.5, 0).setDepth(D + 1));
+      add(this.add.text(200, 160, rank === 1 ? '¡Récord guardado para los dos! 💜' : 'Menos repeticiones y más perfectos = más puntos', { fontFamily: 'VT323', fontSize: '12px', color: '#9fe0cf' }).setOrigin(0.5, 0).setDepth(D + 1));
+      mg.btn(this, add, 148, 180, 92, 20, '↻ Otra vez', 0xffd24a, () => { mg.send('s_again', {}); this.scene.restart(); }, D);
+      mg.btn(this, add, 252, 180, 92, 20, '◀ Al igloo', 0xff7aa8, () => G.flow.home(), D);
     }
     /* pareja simulada (solo modo de prueba) */
     botPhrase(ph, att) {
@@ -366,9 +385,10 @@
       if (this.pop.t > 0) { this.pop.t -= dt; this.hPop.setText(this.pop.txt).setColor(this.pop.col).setAlpha(Math.min(1, this.pop.t * 3)).setY(78 - (0.7 - this.pop.t) * 14); } else this.hPop.setText('');
     }
     hud(time) {
-      const S = SONGS[this.diff];
+      const S = SONGS[this.song];
       this.hSong.setText('♪ ' + S.name + ' · ' + S.label);
       this.hBanner.setText(this.banner || '');
+      const base = this.phr ? this.phr.S : (this.S0 || 0), ci = ((Math.floor((this.bt - base) / 4) % 8) + 8) % 8; (this.cnt || []).forEach((t, i) => t.setColor(i === ci ? (i % 4 === 3 ? '#ff7a7a' : '#ffd24a') : '#ffffff').setScale(i === ci ? 1.35 : 1).setAlpha(i % 4 === 3 ? 0.55 : 1));
       this.hCombo.setText(this.combo >= 3 ? 'Combo x' + this.combo : '');
       const bg = this.barG; bg.clear();
       if (this.mode === 'solo') {

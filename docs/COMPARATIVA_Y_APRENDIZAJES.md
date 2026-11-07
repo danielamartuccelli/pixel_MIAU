@@ -1,23 +1,10 @@
-# Lima de a dos — Comparativa de modos, trazabilidad y aprendizajes (v1.0)
+# Lima de a dos — Aprendizajes y trazabilidad (v1.1)
 
-## 1. ¿Cuál modo corre mejor?
-**Recomendación: dos laptops (`index.html`) como modo principal; `local.html` como modo "sofá".**
-
-| Criterio | 🌐 Dos laptops | 🎮 Una laptop |
-|---|---|---|
-| Rendimiento | Cada laptop corre **un** juego (60 fps holgados). | La laptop corre **dos** juegos a la vez (dos canvas + dos audios): más CPU/GPU; en laptops modestas puede bajar de fps, sobre todo en cocina y Callao. |
-| Estabilidad | Depende de internet y del servidor gratuito de PeerJS (si se cae, el juego se pausa y se reconecta). | Sin red: no hay desconexiones ni latencia. |
-| Información oculta | Funciona: cartas de Card-jitsu y pedidos de Pollos son privados. | **Se rompe**: ambos ven la misma pantalla. |
-| Controles | Teclado completo propio. | Dos mitades de teclado o 2 mandos (el Gamepad API exige pulsar un botón primero). |
-| Chat | Sí. | No (las teclas sintéticas no escriben en el chat). |
-| Preparación | Subir a GitHub Pages y compartir enlace + código de sala. | Abrir `local.html`, sin cuentas. |
-
-**Conclusión:** lo importante es que el juego funcione. Online es el más fiel al diseño (todo es competitivo y secreto donde corresponde). Local es más cómodo para jugar juntos y no depende de internet, pero con dos instancias de Phaser consume más y no sirve para los dos juegos de información oculta.
+## 1. Modo de juego (v1.1)
+**Solo online:** cada uno en su laptop (`index.html`), unidos con un código de amor de 5 letras. En la v1.1 se eliminó `local.html` (modo una laptop): la información oculta (cartas, pedidos) y el rendimiento funcionan mejor con una pantalla por persona.
 
 ## 2. Consideraciones para jugar
-- Usar **Chrome o Edge** actualizados; cerrar pestañas pesadas en modo local y probar **pantalla completa**.
-- Modo local: si hay lag, usar el diseño lado a lado en vez de arriba/abajo y bajar el brillo/otras apps. El slot 2 no reproduce música a propósito.
-- Mandos: conectar y **pulsar un botón** para que el navegador los detecte.
+- Usar **Chrome o Edge** actualizados; cerrar pestañas pesadas y probar **pantalla completa**.
 - Cada modo guarda sus datos en el `localStorage` de ese navegador; borrar datos del navegador borra récords (en online se recuperan del otro jugador).
 - Los tiempos y balance de varios juegos (Cocina, Pollos, Saoco, Card-jitsu) están **sin playtest real**; ajustar en sus archivos `*_sim.js`.
 
@@ -42,6 +29,5 @@
 6. **El HUD DOM tapa el canvas:** revisar solapes con capturas; poner decoración y barras fuera de esas zonas.
 7. **Mirar el sprite orientado:** `l0` sin flip mira a la izquierda; derecha = `flipX`. Esto causó el "de costado" en el cierre.
 8. **Fechas:** redondear por meses (≥15 días suma un mes) para que el texto "2 años y medio" sea correcto.
-9. **Modo local sin reescribir el juego:** envolver el mismo juego en dos iframes y reemplazar solo el transporte (PeerJS → postMessage) permitió reutilizar todo. Las dos iframes tienen almacenamiento separado.
 10. **Probar con Playwright y modo solo** (`?solo=1&go=…`) antes de entregar; capturas por etapa.
 11. **Pendientes de preguntar a Daniela:** nombre real del bar de pollos, qué quería en la casa de Sebas (frase cortada) y el documento original de diseño audiovisual de pollos (solo se tuvo el INDICACIONES).

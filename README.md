@@ -1,27 +1,27 @@
-# Lima de a dos 💜🐧  (v1.0)
+# Lima de a dos 💜🐧  (v1.1)
 
-Juego pixel-art para dos personas (Sebas y Daniela). Gratis, sin cuentas ni membresías. **Una sola carpeta, dos enlaces:**
+Juego pixel-art para dos personas (Sebas y Daniela). Gratis, sin cuentas ni membresías. **Solo online:** cada uno en su laptop, unidos con un **código de amor de 5 letras** (PeerJS), por ejemplo `AMORE`, `BESOS`, `TEAMO`.
 
-| Modo | Enlace | Cuándo |
-|---|---|---|
-| 🌐 **Dos laptops** (online) | `index.html` | Cada uno en su laptop, unidos con un **código de sala** (PeerJS). |
-| 🎮 **Una laptop** (2 mandos o teclado) | `local.html` | Los dos en la misma laptop, pantalla dividida. |
-
-## Modo una laptop (`local.html`)
-- Pantalla dividida (lado a lado o arriba/abajo) y botón de pantalla completa. No necesita internet ni código de sala.
-- **Jugador 1 (Sebas):** mover `W A S D` · acción/saltar/lanzar `F` · usar/golpear `E` · libreta `Q` · cartas `1–5`.
-- **Jugador 2 (Dani):** mover `↑ ← ↓ →` · acción `Enter` · usar/golpear `Shift derecho` · libreta `.` · cartas `Num 1–5`.
-- **Mandos:** el mando 1 controla a Sebas y el mando 2 a Dani (palanca o cruceta; A = acción, X = usar, Y = libreta). Pulsa un botón del mando para que el navegador lo detecte.
-- Cada jugador guarda su propio progreso (el de la partida se sincroniza entre las dos pantallas).
-- Limitación: como comparten pantalla, en **Card-jitsu** y **Pollos** el otro puede ver tu información oculta (cartas, pedidos). Para esos dos juegos conviene jugar online.
-- Usa Chrome o Edge.
+### Novedades de la v1.1
+- Se quitó el modo "una laptop": ahora solo se juega online con código (los códigos son palabras románticas de 5 letras).
+- **Esc** sale de cualquier juego o ventana; el botón "🏠 Igloo" del HUD vuelve a casa.
+- **Igloo de los dos**: sin cama ni juegos; tiene set de DJ, TV, taller artístico (pizarra para dibujar + galería permanente + marcos donde "exponer" los dibujos), estación de cartas románticas (hasta 3 por sesión, con emoticones, sellos y dibujos), pizarra de récords y decoración personalizable. Cada casa (igloo, casa de Sebas, casa de Dani) tiene un corazón.
+- **Casa de Sebas**: paredes blancas, piso marrón, pared estilo Mondrian, el Cuatro en raya, y **Lala** (la gata de Sebas) vive ahí. Cuando Sebas pasa por su casa se desbloquea que Lala sea accesorio de ambos.
+- **El Olivar (San Isidro)**: parque para caminar; de noche hay luna llena. En la banquita está el minijuego **Mirada fija** (zoom a las caras, gana quien no pestañea más tiempo).
+- Clósets distintos para Sebas (pelo punta, camisas de manga corta con diseños, pantalones o shorts, medias de colores, sin lazo/pestañas/aretes) y Daniela; pestaña **Mood** de cara.
+- Emoticones nuevos (cara molesta, muda, triste, seria, red flag, signo de interrogación) con teclas 1–9.
+- Callao y Los Yuyos movidos cerca del océano Pacífico; en Callao la hipotermia hace PERDER la ronda.
+- Salsa: 8 canciones (salsa, salsa romántica, timba, charanga, habanera, electrónica, latin pop) en 3 dificultades, nivel de competitividad de las otras parejas, parejas lado a lado y conteo final de errores.
+- PUCP con hojas de apuntes; Kennedy con Manolo's, olivos y estanque; Pollos solo con clics; Cocina con más tablas y música acelerada; dojo con música oriental; lentes de nerd al pingüino y escena de Bajada Balta.
+- Las fotos incluyen puffles y a Lala (si la llevan).
 
 ## Comandos (Windows)
 1. Instala Python desde python.org (marca "Add to PATH") o usa la extensión *Live Server* de VS Code.
 2. En la carpeta del juego, abre una terminal: `python -m http.server 8000`
-3. Online: `http://localhost:8000/index.html` · Una laptop: `http://localhost:8000/local.html`
+3. Abre `http://localhost:8000/index.html` (en dos navegadores para probar con PeerJS).
 4. Modo prueba de una persona (la pareja es un bot): `http://localhost:8000/index.html?solo=1&me=sebas&name=Sebas&go=LUGAR`
-   - `LUGAR` ∈ `story, map, igloo, casa_sebas, kennedy, pucp, cocina, martuccini, pollos, salsa, carjitsu, conecta4, callao, yuyos, foto, fin`
+   - `LUGAR` ∈ `story, map, igloo, casa_sebas, olivar, kennedy, pucp, cocina, martuccini, pollos, salsa, carjitsu, conecta4, callao, yuyos, foto, fin`
+   - Olivar: `go=olivar&obench=1&oauto=1` (abre la banquita con el bot) · Salsa: `&ssong=salsa|romantica|timba|electro|latinpop|habanera|charanga|electro2&scomp=relax|normal|comp|imba`
    - Playas: `&aauto=1` (Callao, bot) · `&yauto=1` (Yuyos) · Final: `go=fin&bal=50`
 
 ## Cómo publicarlo gratis en GitHub Pages
@@ -34,22 +34,22 @@ Juego pixel-art para dos personas (Sebas y Daniela). Gratis, sin cuentas ni memb
 
 ## Cómo jugar juntos
 1. Cada uno abre el link. Elige "¿Quién eres?" (Sebas o Daniela) y escribe su nombre.
-2. Una persona pulsa **Crear sala** y te da un código de 5 caracteres; la otra lo escribe en **Unirme**.
+2. Una persona pulsa **Crear sala** y te da un código de 5 letras (palabra de amor); la otra lo escribe en **Unirme**.
 3. Se ve la historia del pingüino, luego el igloo conjunto (su base), y desde la puerta el Mapa de Lima (con scroll: ↑↓, rueda o arrastrar; Callao arriba, Barranco abajo).
 Si se cae la conexión, el juego se pausa y se reanuda al reconectar (botón ↻ Reconectar).
 
 ## Controles
-Flechas/WASD mover · E o Espacio usar · Enter chat · 1–7 emotes · ⚙ Ajustes (música, día/noche, marcador, récords).
+Flechas/WASD mover · E o Espacio usar · Enter chat · 1–9 emoticones · Esc salir · ⚙ Ajustes (música, día/noche, marcador, récords).
 
 ## Etapas
-1 base+historia ✅ · 2 igloo/clóset/mapa ✅ · 3 Kennedy (carrera de gatos) ✅ · 4 PUCP (escondidas) ✅ · 5 Cocina Los Ccellis ✅ · 6 Pollos + Academia Saoco ✅ · 7 Cuatro en raya + Card-jitsu ✅ · 8 pantalla final "Feliz 2 años y medio" ✅ · 9 playas (Callao y Los Yuyos), trajes de baño y álbum de fotos ✅ · 10 modo una laptop ✅.
+1 base+historia ✅ · 2 igloo/clóset/mapa ✅ · 3 Kennedy (carrera de gatos) ✅ · 4 PUCP (escondidas) ✅ · 5 Cocina Los Ccellis ✅ · 6 Pollos + Academia Saoco ✅ · 7 Cuatro en raya + Card-jitsu ✅ · 8 pantalla final "Feliz 2 años y medio" ✅ · 9 playas (Callao y Los Yuyos), trajes de baño y álbum de fotos ✅ · 10 v1.1 (online con códigos de amor, igloo/Olivar/Lala, clósets, cartas y galería) ✅.
 
 
 ## Kennedy · Carrera de gatos
-Saltar: ↑ / W / Espacio / click · Agacharse: ↓ / S. Eligen 2, 3 o 5 min y los dos pulsan ¡Listo!. Gana quien más metros haga; premio S/ 10 + bubble tea de accesorio (solo esta sesión). Chocar no mata: te hace tropezar.
+Parque Kennedy (olivos, estanque, vereda de ladrillo y la churrería Manolo's). Saltar: ↑ / W / Espacio / click · Agacharse: ↓ / S. Eligen 2, 3 o 5 min y los dos pulsan ¡Listo!. Gana quien más metros haga; premio S/ 10 + bubble tea de accesorio (solo esta sesión). Chocar no mata: te hace tropezar.
 
 ## PUCP · Escondidas
-Mover: flechas/WASD · Esconderse/salir: E o Espacio. Cada escondite es de una sola persona. El guardia revisa escondites (mira el "?") y el estudiante mira con su cono. Eligen 3, 5 o 7 rondas; gana quien sea visto menos veces. Prueba solo: `?solo=1&me=sebas&go=pucp&prounds=3&pauto=1`.
+Mover: flechas/WASD · Esconderse/salir: E o Espacio. Recoge las hojas de **apuntes** 📄 del campus (desempatan). Cada escondite es de una sola persona. El guardia revisa escondites (mira el "?") y el estudiante mira con su cono. Eligen 3, 5 o 7 rondas; gana quien sea visto menos veces. Prueba solo: `?solo=1&me=sebas&go=pucp&prounds=3&pauto=1`.
 
 
 ## Los Ccellis · Cocina de ramen (etapa 5)
@@ -65,16 +65,16 @@ Overcooked de ramen para dos, en la Cocina de Daniela (Lince). **Los dos pueden 
 ## El Pollo Pier · Memoria de pedidos (etapa 6)
 Los dos atienden **su propio bar** con los **mismos clientes** (misma semilla), y gana quien junta más puntos (el ganador recibe S/ 10; empate = nadie mueve soles). Solo hay **cerveza** y **salchipapas**.
 - Cada mesa muestra su pedido en un globo **unos segundos y se borra**: hay que **memorizarlo**. Con cada cliente nuevo el **aforo** (barra con reloj) se va llenando; a los 3 errores graves se llena el bar y se acaba.
-- Mover: flechas/WASD · **mantén E** en el grifo o la freidora para llenar · **E** en una mesa para servir · **Q** = libreta (3 usos, vuelve a mostrar el pedido) · **E** en el tacho vacía la bandeja.
+- **Todo con clics:** clic en la cerveza o en las salchipapas = se llena la bandeja (caben 4) · clic en una mesa = entregar · botón **📖 Libreta** (o Q) y clic en una mesa = recordar el pedido (3 usos) · clic en el basurero = vaciar la bandeja. No hay que caminar.
 - Dificultad Fácil/Normal/Difícil y duración 90/150/210 s en la sala de espera. Ajustes en `DIFFS` de `src/pollos_sim.js`.
 - Prueba: `?solo=1&me=sebas&go=pollos&pdur=30&pdiff=normal&pauto=1`
 
 ## Academia Saoco · Baile de salsa (etapa 6)
-Baile de flechas estilo disco de Club Penguin, con música procedural: **Habanera de Lince** (fácil), **Salsa Saoco** (normal) y **Charanga Ccelli** (difícil).
+Baile de flechas, con música procedural. Fácil: Habanera, Salsa Romántica, Latin Pop · Normal: Salsa Saoco, Electro Saoco · Difícil: Charanga, Timba, Electro Turbo. El ritmo es el 1-2-3 _ 5-6-7 _ de la salsa (hay un contador en pantalla). En **Dupla** los dos bailan lado a lado y al final se cuenta cuántas veces se equivocó cada uno (se acumula en récords); se elige qué tan competitivas son las otras parejas (Relajadas … Imbatibles).
 - **Solitario ("el VS yo")**: toda la canción, combo hasta ×2, contra tu propio récord (no mueve soles).
 - **Dupla**: bailan por frases; si **uno falla, los dos repiten la frase**. Compiten contra dos duplas NPC ("Los Rumberos" y "Las Pimienta"); el podio al primer lugar guarda récord para ambos.
 - Controles: ← ↓ ↑ → (o WASD) al compás cuando las flechas llegan a los receptores. En la sala hay **Ajuste de ritmo ± 20 ms** por si tu audio llega con retraso.
-- Prueba: `?solo=1&me=sebas&go=salsa&smode=solo|dupla&sdiff=facil|normal|dificil&sauto=1`
+- Prueba: `?solo=1&me=sebas&go=salsa&smode=solo|dupla&ssong=timba&scomp=comp&sauto=1`
 
 ## Cuatro en raya · mesa del igloo (etapa 7)
 Se juega desde la **mesa del igloo** (acércate y pulsa E). Tablero 7×6, por turnos: **Sebas = rojas, Dani = amarillas**.

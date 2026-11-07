@@ -18,7 +18,6 @@
       this.strand = this.add.graphics().setDepth(40);
       this.grain = this.add.graphics().setDepth(90);
       this.caption(0);
-      this.input.keyboard.on('keydown-ESC', () => G.flow.openMap());
       this.events.once('shutdown', () => { this.timers && this.timers.forEach(t => t.remove()); });
       this.run();
     }

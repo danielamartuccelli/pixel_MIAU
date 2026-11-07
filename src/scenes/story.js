@@ -18,6 +18,21 @@
   }
 
   const PANELS = [
+    { txt: () => 'Todo empieza en Miraflores: el pingüino baja por la Bajada Balta, buscando… y en toda una playa de piedras encuentra la más hermosa. Pero primero, el principio…',
+      draw(s) {
+        const g = s.add.graphics(); A.bands(g, 0, 0, W, 120, [0x7fc8f0, 0xbfe6ff, 0xffe9c8], 4);
+        g.fillStyle(0xd8b88a).fillTriangle(0, 60, 0, 150, 190, 150).fillStyle(0xc9a878).fillTriangle(0, 66, 0, 150, 170, 150);   // el acantilado y la bajada
+        g.fillStyle(0xa8a8b0).fillRect(0, 150, W, 80); g.fillStyle(0x4aa6d8).fillRect(0, 118, W, 26).fillStyle(0xbfeaff, 0.8).fillRect(30, 124, 40, 2).fillRect(250, 134, 60, 2);
+        for (let i = 0; i < 70; i++) { const x = (i * 53) % 400, y = 152 + (i * 31) % 70, r = 2 + (i % 4); g.fillStyle([0x8a8a94, 0xb8b8c2, 0x6f6f7a, 0xcfc8c0][i % 4]).fillEllipse(x, y, r * 2.2, r * 1.5); }
+        g.lineStyle(3, 0xf3e8c8).lineBetween(20, 72, 170, 146); g.lineStyle(1, 0x9a8a6a).lineBetween(20, 76, 170, 150);
+        A.text(s, 96, 66, 'BAJADA BALTA', 13, '#6a3a1c', { stroke: '#ffffff', strokeThickness: 3 }).setDepth(6);
+        const p = A.penguin(s, 70, 96, { s: 1.1 }).setDepth(6); s.tweens.add({ targets: p, x: 170, y: 140, duration: 3200, repeat: -1, repeatDelay: 600 }); A.waddle(s, p, 260, 6);
+        const st = s.add.graphics().setDepth(6); st.fillStyle(0xfff3a0, 0.35).fillCircle(0, 0, 18).fillStyle(0xe9a6d4).fillEllipse(0, 0, 18, 11).fillStyle(0xffffff, 0.85).fillEllipse(-4, -2, 6, 3); st.x = 300; st.y = 168;
+        s.tweens.add({ targets: st, scale: { from: 0.9, to: 1.25 }, duration: 600, yoyo: true, repeat: -1 });
+        [[282, 160], [322, 164], [312, 180]].forEach(([x, y], i) => { const sp = s.add.graphics().setDepth(7); A.sparkle(sp, 0, 0, 4, 0xfff7c2); sp.x = x; sp.y = y; s.tweens.add({ targets: sp, alpha: { from: 0, to: 1 }, duration: 500, yoyo: true, repeat: -1, delay: i * 250 }); });
+        A.text(s, 300, 146, 'la piedra más hermosa', 12, '#ffffff', { stroke: '#6a3a6a', strokeThickness: 3 }).setDepth(6);
+        A.snow(s, 6, 50);
+      } },
     { txt: (N) => 'Había una vez un pingüino llamado ' + N + ', que vivía en su manada… y creció solito, ¡sin saber lo que se venía!',
       draw(s, n) {
         snowBg(s);

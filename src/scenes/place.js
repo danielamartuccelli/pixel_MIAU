@@ -37,7 +37,6 @@
       const bt = this.add.graphics().setDepth(12); bt.fillStyle(0xff7aa8).fillRoundedRect(150, 198, 100, 20, 4).lineStyle(2, 0x2b1b30).strokeRoundedRect(150, 198, 100, 20, 4);
       this.add.text(200, 208, '◀ Volver al mapa', { fontFamily: 'VT323', fontSize: '14px', color: '#2b1b30' }).setOrigin(0.5).setDepth(13);
       this.add.zone(200, 208, 100, 20).setInteractive({ useHandCursor: true }).on('pointerdown', () => G.flow.openMap()).setDepth(14);
-      this.input.keyboard.on('keydown-ESC', () => G.flow.openMap());
       if (night) this.add.rectangle(W / 2, H / 2, W, H, 0x1a1a6a, 0.3).setDepth(900);
       A.snow(this, 0, 50);
     }

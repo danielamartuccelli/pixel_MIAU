@@ -7,6 +7,8 @@
      ESTUDIANTE (solo mira) recorren el campus. Si te ve el cono unos instantes, o te encuentran en tu escondite, quedas VISTO.
      Puedes cambiar de escondite en plena ronda… pero moverte en el cono es peligroso.
    - Se elige 3, 5 o 7 rondas. Gana quien menos veces sea visto (empate = ronda extra de muerte súbita).
+   - APUNTES: en cada ronda hay 4 hojas de apuntes tiradas por el campus (misma posición para los dos, por semilla). Recógelas pasando encima:
+     desempatan la partida y son el riesgo/recompensa (salir del escondite = que te vea la patrulla).
    Red: el anfitrión manda la semilla (p_go) y decide el marcador (p_res); cada uno juzga si LO vieron a él (p_fin).
    Prueba solo: ?solo=1&me=sebas&go=pucp&prounds=3&pauto=1  (la pareja es un bot)
    =========================================================== */
@@ -72,10 +74,9 @@
     create() {
       A.emoteTextures(this.game); G.refreshTextures(); this.makeNpcTextures();
       this.phase = 'lobby'; this.rounds = +Q.get('prounds') || 5; this.ready = { me: false, partner: false }; this.ui = []; this.r = 0; this.scores = { dani: 0, sebas: 0 };
-      this.npcs = []; this.acc = 0; this.seed = 0; this.fin = {}; this.over = false;
+      this.npcs = []; this.acc = 0; this.seed = 0; this.fin = {}; this.over = false; this.tn = { dani: 0, sebas: 0 }; this.myN = 0; this.botN = 0; this.noteObjs = [];
       this.keys = this.input.keyboard.addKeys({ up: 'UP', down: 'DOWN', left: 'LEFT', right: 'RIGHT', w: 'W', a: 'A', s: 'S', d: 'D' }, false);
       this.input.keyboard.on('keydown-E', () => this.toggleHide()); this.input.keyboard.on('keydown-SPACE', () => this.toggleHide());
-      this.input.keyboard.on('keydown-ESC', () => { if (this.phase === 'lobby' || this.phase === 'over') G.flow.openMap(); });
       const mkAct = (who, x, y) => { const p = G.state[who === 'me' ? 'me' : 'partner'], a = { who, x, y, dir: 'd', moving: false, t: 0, hid: -1, seen: false, meter: 0, tx: x, ty: y };
         a.shadow = this.add.ellipse(x, y, 14, 5, 0x000000, 0.25); a.spr = this.add.sprite(x, y, 'char_' + who, 'd0').setOrigin(0.5, 1);
         a.label = this.add.text(x, y - 30, p.name || '', { fontFamily: 'VT323', fontSize: '12px', color: '#ffffff', stroke: '#2b1b30', strokeThickness: 3 }).setOrigin(0.5, 1);
@@ -87,7 +88,7 @@
       this.banner = A.text(this, 200, 36, '', 14, '#ffffff').setDepth(5000); this.sub = A.text(this, 200, 52, '', 11, '#ffd24a').setDepth(5000);
       this.nets = [['p_cfg', d => { this.rounds = d.rounds; this.drawLobby(); }], ['p_ready', d => { this.ready.partner = !!d.r; this.drawLobby(); this.tryStart(); }],
         ['p_go', d => { if (this.phase === 'lobby') this.beginMatch(d.seed, d.rounds); }], ['p_pos', d => this.onPos(d)], ['p_seen', () => { this.pa.seen = true; this.pa.mark.setText('!'); }],
-        ['p_fin', d => { this.fin.partner = d.seen; this.hostResolve(); }], ['p_res', d => this.applyRes(d)], ['p_next', d => this.startRound(d.r)], ['p_over', d => this.showOver(d)], ['p_again', () => this.scene.restart()]];
+        ['p_fin', d => { this.fin.partner = d.seen; this.fin.pn = d.n || 0; this.hostResolve(); }], ['p_res', d => this.applyRes(d)], ['p_next', d => this.startRound(d.r)], ['p_over', d => this.showOver(d)], ['p_again', () => this.scene.restart()]];
       const net = G.net; this.nets.forEach(([t, f]) => (net.handlers[t] = net.handlers[t] || []).push(f));
       this.events.once('shutdown', () => this.nets.forEach(([t, f]) => { net.handlers[t] = (net.handlers[t] || []).filter(x => x !== f); }));
       this.drawLobby(); this.send('p_cfg', { rounds: this.rounds });
@@ -127,6 +128,12 @@
       this.add.text(36, 176, 'el pasto', { fontFamily: 'VT323', fontSize: '10px', color: '#2f7a46' }).setOrigin(0.5).setDepth(1).setAlpha(0.8);
       this.add.text(364, 188, 'el pasto', { fontFamily: 'VT323', fontSize: '10px', color: '#2f7a46' }).setOrigin(0.5).setDepth(1).setAlpha(0.8);
       this.add.text(200, 100, G.PLACES.pucp.name + ' · ' + G.PLACES.pucp.district, { fontFamily: 'VT323', fontSize: '11px', color: '#6a3a1c' }).setOrigin(0.5, 0).setDepth(1).setAlpha(0.9);
+      // rosa de los vientos en el pasto (como la del campus)
+      { const cx = 326, cy = 188; g.fillStyle(0xdccfae).fillCircle(cx, cy, 19).fillStyle(0x7fcf6a).fillCircle(cx, cy, 16);
+        g.fillStyle(0xf4ecd2); [[0, -19, 4, -5, -4, -5], [19, 0, 5, -4, 5, 4], [0, 19, 4, 5, -4, 5], [-19, 0, -5, -4, -5, 4]].forEach(([x1, y1, x2, y2, x3, y3]) => g.fillTriangle(cx + x1, cy + y1, cx + x2, cy + y2, cx + x3, cy + y3));
+        g.fillStyle(0xb5502a).fillCircle(cx, cy, 3); this.add.text(cx, cy + 22, 'la rosa de los vientos', { fontFamily: 'VT323', fontSize: '9px', color: '#2f7a46' }).setOrigin(0.5).setDepth(1); }
+      // edificio rosado con rampa (lado izquierdo)
+      g.fillStyle(0xc98a7a).fillRect(0, 100, 30, 14).fillStyle(0xa86c5c).fillRect(0, 100, 30, 3); g.fillStyle(0xcdb98a).fillTriangle(30, 114, 62, 114, 30, 100).lineStyle(1, 0x6b4a3a).lineBetween(30, 100, 62, 114);
       SPOTS.forEach((s, i) => this.drawSpot(s, i));
     }
     drawSpot(s, i) {
@@ -141,16 +148,16 @@
     drawLobby() {
       this.ui.forEach(o => o.destroy()); this.ui = []; if (this.phase !== 'lobby') return;
       const add = o => { this.ui.push(o); return o; }, D = 9000, pg = add(this.add.graphics().setDepth(D));
-      pg.fillStyle(0x2b1b30, 1).fillRoundedRect(36, 34, 328, 160, 8).lineStyle(2, 0xffd24a).strokeRoundedRect(36, 34, 328, 160, 8);
-      add(A.text(this, 200, 50, '🙈 ESCONDIDAS EN LA PUCP', 16, '#ffd24a').setDepth(D + 1));
-      add(this.add.text(200, 64, 'Corre a un escondite (arbusto, árbol o columna) y pulsa E. Cada escondite es de UNA sola persona. El guardia revisa escondites (verás un "?") y el estudiante mira con su cono: si te ven, pierdes la ronda. Gana quien sea visto menos veces.', { fontFamily: 'VT323', fontSize: '11px', color: '#fff3d6', align: 'center', lineSpacing: -2, wordWrap: { width: 300 } }).setOrigin(0.5, 0).setDepth(D + 1));
-      add(this.add.text(200, 108, 'Mover: flechas / WASD     Esconderse / salir: E o Espacio', { fontFamily: 'VT323', fontSize: '12px', color: '#9fe0cf' }).setOrigin(0.5, 0).setDepth(D + 1));
-      add(this.add.text(200, 124, 'Cantidad de rondas:', { fontFamily: 'VT323', fontSize: '12px', color: '#ffffff' }).setOrigin(0.5, 0).setDepth(D + 1));
-      [3, 5, 7].forEach((n, i) => this.btn(add, 140 + i * 60, 146, 50, 20, n + ' rondas', this.rounds === n ? 0xffd24a : 0xbfeaff, () => { this.rounds = n; this.send('p_cfg', { rounds: n }); this.drawLobby(); }, D, 12));
+      pg.fillStyle(0x2b1b30, 1).fillRoundedRect(30, 28, 340, 170, 8).lineStyle(2, 0xffd24a).strokeRoundedRect(30, 28, 340, 170, 8);
+      add(A.text(this, 200, 42, '🙈 ESCONDIDAS EN LA PUCP', 15, '#ffd24a').setDepth(D + 1));
+      add(this.add.text(200, 54, '1) Corre a un escondite (arbusto, árbol o columna) y pulsa E: cada uno es de UNA sola persona.\n2) Llega la patrulla: el guardia revisa escondites (verás un "?") y su cono rojo te ve si te pillan. Si te ven, pierdes la ronda.\n3) Recoge 📄 apuntes del campus: te exponen, pero desempatan.\nGana quien sea visto menos veces.', { fontFamily: 'VT323', fontSize: '11px', color: '#fff3d6', align: 'center', lineSpacing: -2, wordWrap: { width: 318 } }).setOrigin(0.5, 0).setDepth(D + 1));
+      add(this.add.text(200, 118, 'Mover: flechas / WASD · Esconderse/salir: E o Espacio · Salir: Esc', { fontFamily: 'VT323', fontSize: '11px', color: '#9fe0cf' }).setOrigin(0.5, 0).setDepth(D + 1));
+      add(this.add.text(200, 130, 'Cantidad de rondas:', { fontFamily: 'VT323', fontSize: '12px', color: '#ffffff' }).setOrigin(0.5, 0).setDepth(D + 1));
+      [3, 5, 7].forEach((n, i) => this.btn(add, 140 + i * 60, 152, 50, 18, n + ' rondas', this.rounds === n ? 0xffd24a : 0xbfeaff, () => { this.rounds = n; this.send('p_cfg', { rounds: n }); this.drawLobby(); }, D, 12));
       const nm = G.state.me.name || 'Tú', pn = G.state.partner.name || 'Pareja';
-      this.btn(add, 120, 176, 104, 20, this.ready.me ? '✔ ¡Listo!' : '¡Estoy listo!', this.ready.me ? 0x7fd1ae : 0xff7aa8, () => { this.ready.me = !this.ready.me; this.send('p_ready', { r: this.ready.me }); this.drawLobby(); this.tryStart(); }, D);
-      add(this.add.text(190, 168, (G.solo ? pn + ' (bot) 🤖: listo' : pn + (this.ready.partner ? ': ✔ listo' : ': esperando…')) + '\n' + nm + (this.ready.me ? ': ✔ listo' : ''), { fontFamily: 'VT323', fontSize: '12px', color: '#fff3d6', lineSpacing: -1 }).setOrigin(0, 0).setDepth(D + 1));
-      this.btn(add, 326, 44, 52, 14, '◀ Mapa', 0xffffff, () => G.flow.openMap(), D, 10);
+      this.btn(add, 120, 180, 104, 18, this.ready.me ? '✔ ¡Listo!' : '¡Estoy listo!', this.ready.me ? 0x7fd1ae : 0xff7aa8, () => { this.ready.me = !this.ready.me; this.send('p_ready', { r: this.ready.me }); this.drawLobby(); this.tryStart(); }, D);
+      add(this.add.text(190, 172, (G.solo ? pn + ' (bot) 🤖: listo' : pn + (this.ready.partner ? ': ✔ listo' : ': esperando…')) + '\n' + nm + (this.ready.me ? ': ✔ listo' : ''), { fontFamily: 'VT323', fontSize: '12px', color: '#fff3d6', lineSpacing: -1 }).setOrigin(0, 0).setDepth(D + 1));
+      this.btn(add, 332, 180, 60, 18, '◀ Igloo', 0xffffff, () => G.flow.home(), D, 12);
     }
     btn(add, x, y, w, h, label, color, fn, depth, fs) {
       const g = add(this.add.graphics().setDepth(depth + 1)); g.fillStyle(0x2b1b30).fillRoundedRect(x - w / 2 + 1, y - h / 2 + 3, w, h, 4).fillStyle(color).fillRoundedRect(x - w / 2, y - h / 2, w, h, 4).lineStyle(1.5, 0x2b1b30).strokeRoundedRect(x - w / 2, y - h / 2, w, h, 4);
@@ -164,14 +171,27 @@
     }
 
     /* ---------- partida y rondas ---------- */
-    beginMatch(seed, rounds) { this.seed = seed; this.rounds = rounds; this.ui.forEach(o => o.destroy()); this.ui = []; this.scores = { dani: 0, sebas: 0 }; this.over = false; this.startRound(1); }
+    beginMatch(seed, rounds) { this.seed = seed; this.rounds = rounds; this.ui.forEach(o => o.destroy()); this.ui = []; this.scores = { dani: 0, sebas: 0 }; this.tn = { dani: 0, sebas: 0 }; this.botN = 0; this.over = false; this.startRound(1); }
     startRound(r) {
       if (this.phase === 'over') return;
       this.r = r; this.phase = 'hide'; this.fin = {}; this.resolved = false; this.npcs = []; this.acc = 0; this.pT = 0;
-      this.hideT = Math.max(4.5, 8.5 - r * 0.45); this.bot = G.solo ? { spot: -1, wait: 0.6 + Math.random() * 1.2, moved: false } : null;
+      this.hideT = Math.max(4.5, 8.5 - r * 0.45); this.makeNotes(r); this.myN = 0; this.bot = G.solo ? { spot: -1, wait: 0.6 + Math.random() * 1.2, moved: false } : null;
       [[this.me, 180], [this.pa, 220]].forEach(([a, x]) => { Object.assign(a, { x, y: 205, tx: x, ty: 205, hid: -1, seen: false, meter: 0, dir: 'u', moving: false }); a.spr.setAlpha(1); a.mark.setText(''); });
       this.setBanner('RONDA ' + r + (r > this.rounds ? ' · ¡MUERTE SÚBITA!' : '/' + this.rounds), '¡Escóndete! Corre a un arbusto, árbol o columna y pulsa E');
       G.audio.sfx('ok');
+    }
+    makeNotes(r) {
+      (this.noteObjs || []).forEach(o => o.g.destroy()); this.noteObjs = []; const R = rng(this.seed * 3 + r * 104729);
+      for (let i = 0; i < 4; i++) {
+        let x, y, ok, tries = 0; do { x = 30 + R() * 340; y = 124 + R() * 88; ok = SPOTS.every(s => Math.hypot(x - s.x, y - s.y) > 22) && Math.hypot(x - 200, y - 205) > 20; } while (!ok && ++tries < 30);
+        const g = this.add.graphics().setDepth(y); g.fillStyle(0x000000, 0.2).fillEllipse(x, y + 1, 9, 3); g.fillStyle(0xffffff).fillRect(x - 4, y - 7, 8, 8).lineStyle(1, 0x2b1b30).strokeRect(x - 4, y - 7, 8, 8).fillStyle(0x7a8fd8).fillRect(x - 2, y - 5, 4, 1).fillRect(x - 2, y - 3, 4, 1).fillStyle(0xff5d97).fillRect(x - 2, y - 1, 2, 1);
+        this.noteObjs.push({ x, y, g, got: false, bob: i });
+      }
+    }
+    pickNotes() {
+      const a = this.me; if (a.hid >= 0 || a.seen) return;
+      (this.noteObjs || []).forEach(n => { if (!n.got && Math.hypot(a.x - n.x, a.y - n.y) < 9) { n.got = true; n.g.setVisible(false); this.myN++; G.audio.sfx('coin'); } });
+      if (this.bot && !this.pa.seen && this.pa.hid < 0) (this.noteObjs || []).forEach(n => { if (!n.got && Math.hypot(this.pa.x - n.x, this.pa.y - n.y) < 9) { this.botN = (this.botN || 0) + 1; } });
     }
     setBanner(t, s) { this.banner.setText(t); this.sub.setText(s || ''); }
     toggleHide() {
@@ -203,7 +223,7 @@
 
     update(time, dtMs) {
       const dt = Math.min(0.05, dtMs / 1000);
-      if (['hide', 'patrol', 'between'].includes(this.phase)) this.moveMe(dt);
+      if (['hide', 'patrol', 'between'].includes(this.phase)) { this.moveMe(dt); if (this.phase !== 'between') this.pickNotes(); }
       this.movePartner(dt);
       if (this.phase === 'hide') {
         this.hideT -= dt; if (this.bot) this.simBot(dt);
@@ -245,8 +265,8 @@
     endPatrol() {
       if (this.phase !== 'patrol') return; this.phase = 'between'; this.npcs.forEach(n => { n.out = true; });
       this.setBanner('Fin de la patrulla', 'Contando…');
-      const seen = this.me.seen; this.fin.me = seen; this.send('p_fin', { seen });
-      if (G.solo) { this.fin.partner = this.pa.seen; this.hostResolve(); }
+      const seen = this.me.seen; this.fin.me = seen; this.fin.mn = this.myN || 0; this.send('p_fin', { seen, n: this.myN || 0 });
+      if (G.solo) { this.fin.partner = this.pa.seen; this.fin.pn = this.botN || 0; this.botN = 0; this.hostResolve(); }
       else this.time.delayedCall(3000, () => this.hostResolve(true));
       this.hostResolve();
     }
@@ -257,21 +277,23 @@
       this.resolved = true;
       const my = G.state.me.id, pi = G.state.partner.id, s = { dani: this.scores.dani, sebas: this.scores.sebas };
       if (!this.fin.me) s[my]++; if (!(this.fin.partner === undefined ? this.pa.seen : this.fin.partner)) s[pi]++;
-      const res = { r: this.r, seen: { [my]: !!this.fin.me, [pi]: this.fin.partner === undefined ? this.pa.seen : !!this.fin.partner }, scores: s };
+      const tn = { dani: this.tn.dani, sebas: this.tn.sebas }; tn[my] += this.fin.mn || 0; tn[pi] += this.fin.pn || 0;
+      const res = { r: this.r, seen: { [my]: !!this.fin.me, [pi]: this.fin.partner === undefined ? this.pa.seen : !!this.fin.partner }, scores: s, tn };
       this.send('p_res', res); this.applyRes(res);
     }
     applyRes(res) {
-      this.scores = res.scores; this.phase = 'between'; const my = G.state.me.id, pi = G.state.partner.id;
+      this.scores = res.scores; this.tn = res.tn || this.tn; this.phase = 'between'; const my = G.state.me.id, pi = G.state.partner.id;
       const iSeen = res.seen[my], pSeen = res.seen[pi];
       this.me.mark.setText(iSeen ? '!' : '✔'); this.pa.mark.setText(pSeen ? '!' : '✔');
       this.setBanner(iSeen && pSeen ? 'Los dos fueron vistos 🙈🙈' : iSeen ? 'Te vieron a ti 🙈' : pSeen ? 'Vieron a ' + G.state.partner.name + ' 🙈' : '¡Ni los vieron! 😎😎', this.scoreLine());
       if (!(G.solo || G.net.role === 'host')) return;
       this.time.delayedCall(3600, () => {
-        if (this.r >= this.rounds && this.scores.dani !== this.scores.sebas) { const w = this.scores.dani > this.scores.sebas ? 'dani' : 'sebas'; const o = { winner: w, scores: this.scores }; this.send('p_over', o); this.showOver(o); }
+        const sc = this.scores, tn = this.tn, tie = sc.dani === sc.sebas;
+        if (this.r >= this.rounds && (!tie || tn.dani !== tn.sebas)) { const w = !tie ? (sc.dani > sc.sebas ? 'dani' : 'sebas') : (tn.dani > tn.sebas ? 'dani' : 'sebas'); const o = { winner: w, scores: this.scores, tn, tieBreak: tie }; this.send('p_over', o); this.showOver(o); }
         else { this.send('p_next', { r: this.r + 1 }); this.startRound(this.r + 1); }
       });
     }
-    scoreLine() { const s = this.scores, d = G.state.me.id === 'dani' ? G.state.me.name : G.state.partner.name, e = G.state.me.id === 'sebas' ? G.state.me.name : G.state.partner.name; return 'Rondas sin ser visto —  ' + d + ' ' + s.dani + '  ·  ' + s.sebas + ' ' + e; }
+    scoreLine() { const s = this.scores, d = G.state.me.id === 'dani' ? G.state.me.name : G.state.partner.name, e = G.state.me.id === 'sebas' ? G.state.me.name : G.state.partner.name; return 'Sin ser visto: ' + d + ' ' + s.dani + ' · ' + s.sebas + ' ' + e + '   📄 ' + this.tn.dani + ' - ' + this.tn.sebas; }
 
     /* ---------- dibujo por cuadro ---------- */
     render(time) {
@@ -305,9 +327,9 @@
       const g = this.add.graphics().setDepth(D); g.fillStyle(0x2b1b30, 1).fillRoundedRect(50, 38, 300, 150, 8).lineStyle(2, 0xffd24a).strokeRoundedRect(50, 38, 300, 150, 8);
       A.text(this, 200, 58, '🏆 ¡GANÓ ' + String(wn || '').toUpperCase() + '!', 18, '#ffd24a').setDepth(D + 1);
       const nm = id => id === my ? G.state.me.name : G.state.partner.name;
-      [[my, 84], [pi, 102]].forEach(([id, y]) => this.add.text(200, y, nm(id) + ':  ' + o.scores[id] + ' rondas sin ser visto' + (id === win ? '  👑' : ''), { fontFamily: 'VT323', fontSize: '15px', color: id === win ? '#ffd24a' : '#fff3d6' }).setOrigin(0.5).setDepth(D + 1));
-      this.add.text(200, 124, '+ S/ ' + PRIZE + ' para ' + nm(win) + ' · récord guardado', { fontFamily: 'VT323', fontSize: '13px', color: '#ffd1e0' }).setOrigin(0.5).setDepth(D + 1);
-      this.btn(o => o, 150, 160, 92, 22, '↻ Revancha', 0xffd24a, () => { this.send('p_again', {}); this.scene.restart(); }, D); this.btn(o => o, 250, 160, 92, 22, '◀ Al mapa', 0xff7aa8, () => G.flow.openMap(), D);
+      [[my, 84], [pi, 102]].forEach(([id, y]) => this.add.text(200, y, nm(id) + ':  ' + o.scores[id] + ' rondas sin ser visto · 📄 ' + ((o.tn || {})[id] || 0) + (id === win ? '  👑' : ''), { fontFamily: 'VT323', fontSize: '15px', color: id === win ? '#ffd24a' : '#fff3d6' }).setOrigin(0.5).setDepth(D + 1));
+      this.add.text(200, 124, (o.tieBreak ? 'Desempate por apuntes 📄 · ' : '') + '+ S/ ' + PRIZE + ' para ' + nm(win) + ' · récord guardado', { fontFamily: 'VT323', fontSize: '13px', color: '#ffd1e0' }).setOrigin(0.5).setDepth(D + 1);
+      this.btn(o => o, 150, 160, 92, 22, '↻ Revancha', 0xffd24a, () => { this.send('p_again', {}); this.scene.restart(); }, D); this.btn(o => o, 250, 160, 92, 22, '◀ Al igloo', 0xff7aa8, () => G.flow.home(), D);
       for (let i = 0; i < 14; i++) { const h = this.add.graphics().setDepth(D + 0.5); A.heart(h, 0, 0, 3 + (i % 3), [0xff5d97, 0xffd24a, 0x7fd1ae, 0xb07cff][i % 4]); h.x = 70 + Math.random() * 260; h.y = 30; this.tweens.add({ targets: h, y: 215, alpha: { from: 1, to: 0.2 }, duration: 1800 + Math.random() * 1400, delay: i * 90, repeat: -1 }); }
     }
   }

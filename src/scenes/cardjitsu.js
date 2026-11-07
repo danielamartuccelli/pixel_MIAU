@@ -58,7 +58,6 @@
       kb.on('keydown-LEFT', () => this.select(Math.max(0, this.sel - 1))); kb.on('keydown-RIGHT', () => this.select(this.sel < 0 ? 0 : Math.min(this.hand.length - 1, this.sel + 1)));
       kb.on('keydown-A', () => this.select(Math.max(0, this.sel - 1))); kb.on('keydown-D', () => this.select(this.sel < 0 ? 0 : Math.min(this.hand.length - 1, this.sel + 1)));
       ['SPACE', 'E'].forEach(k => kb.on('keydown-' + k, () => this.lock())); kb.on('keydown-C', () => this.toggleChi());
-      kb.on('keydown-ESC', () => { if (this.phase === 'lobby' || this.phase === 'over') G.flow.openMap(); });
       mg.bind(this, [['j_ready', d => { this.ready.partner = !!d.r; if (this.isHost() && this.phase === 'count' && !this.round) mg.send('j_go', { seed: this.seed, gid: this.gid }); this.tryStart(); if (this.phase === 'lobby' || this.phase === 'over') this.drawPanel(); }],
         ['j_go', d => { if (d.gid > this.gid && (this.phase === 'lobby' || this.phase === 'over')) this.begin(d.seed, d.gid); }],
         ['j_pick', d => this.onPick(d)]]);

@@ -5,10 +5,10 @@
    =========================================================== */
 (function () {
   const G = window.G;
-  const GAMES = ['callao', 'yuyos', 'connect4', 'kennedy', 'pucp', 'pollos', 'cocina', 'salsa', 'salsa_facil', 'salsa_normal', 'salsa_dificil', 'carjitsu'];
+  const GAMES = ['callao', 'yuyos', 'olivar', 'connect4', 'kennedy', 'pucp', 'pollos', 'cocina', 'salsa', 'salsa_facil', 'salsa_normal', 'salsa_dificil', 'carjitsu'];
 
   G.defaultRecords = function () {
-    const r = { games: {}, best: {}, matches: { dani: 0, sebas: 0 } };
+    const r = { games: {}, best: {}, matches: { dani: 0, sebas: 0 }, stats: { salsaErr: { dani: 0, sebas: 0 } } };
     GAMES.forEach(g => { r.games[g] = { dani: 0, sebas: 0 }; r.best[g] = { dani: 0, sebas: 0 }; });
     return r;
   };
@@ -23,13 +23,18 @@
     recRev: 0,
     kitchen: { unlocked: 1, stars: {}, best: {} },   // Los Ccellis: niveles desbloqueados, estrellas y mejores puntajes
     album: [],                      // fotos vintage de las playas (permanentes)
+    gallery: [],                    // dibujos del taller artístico (permanentes, compartidos)
+    exhibit: {},                    // en qué marco del igloo se expone cada dibujo: {marco: id}
+    letters: [],                    // cartas románticas recibidas (permanentes)
+    lalaSeen: false,                // se desbloquea al visitar la casa de Sebas
+    house: { dani: {}, sebas: {}, both: {} },   // decoración elegida de cada casa
     belts: { dani: 0, sebas: 0 },   // puntos de bufanda (Card-jitsu), permanentes
     unlocks: { dani: {}, sebas: {} },
     storySeen: false,
     room: { role: null, code: null },
     scene: null, place: 'igloo',
     pos: null,
-    session: { boba: { dani: false, sebas: false } }  // bubble tea extra: solo esta sesión
+    session: { boba: { dani: false, sebas: false }, letters: 0 }  // bubble tea extra: solo esta sesión
   };
 
   G.save = function () {
@@ -38,7 +43,7 @@
       localStorage.setItem(G.STORAGE_KEY, JSON.stringify({
         me: s.me, settings: s.settings, balance: s.balance, scoreRev: s.scoreRev,
         records: s.records, recRev: s.recRev, belts: s.belts, unlocks: s.unlocks, kitchen: s.kitchen,
-        storySeen: s.storySeen, room: s.room, place: s.place, album: s.album
+        storySeen: s.storySeen, room: s.room, place: s.place, album: s.album, gallery: s.gallery, exhibit: s.exhibit, letters: s.letters, lalaSeen: s.lalaSeen, house: s.house
       }));
     } catch (e) { /* modo privado, etc. */ }
   };
@@ -49,11 +54,13 @@
       if (!raw) return;
       const d = JSON.parse(raw), s = G.state;
       ['me', 'settings', 'records', 'belts', 'unlocks', 'room', 'kitchen'].forEach(k => { if (d[k]) s[k] = Object.assign({}, s[k], d[k]); });
-      ['balance', 'scoreRev', 'recRev', 'storySeen', 'place', 'album'].forEach(k => { if (d[k] !== undefined) s[k] = d[k]; });
+      ['balance', 'scoreRev', 'recRev', 'storySeen', 'place', 'album', 'gallery', 'exhibit', 'letters', 'lalaSeen', 'house'].forEach(k => { if (d[k] !== undefined) s[k] = d[k]; });
       if (!G.PLACES[s.place]) s.place = G.BASE;                     // guardados de la v0.2 (igloo_dani / igloo_sebas)
       if (s.me.look && s.me.look.acc) s.me.look.acc.boba = false;   // el bubble tea es solo de la sesión
+      if (s.me.look && s.me.id === 'sebas') { const h = s.me.look.hair; if (h && h.style === 'bald') h.style = 'punta'; if (s.me.look.earrings && s.me.look.earrings !== 'none') s.me.look.earrings = 'none'; if (s.me.look.eyeStyle === 'lash') s.me.look.eyeStyle = 'dot'; const o = s.me.look.outfit; if (o && o.bottom.style === 'skirt') o.bottom.style = 'pants'; if (o && ['dress', 'tank', 'cheer'].includes(o.top.style)) o.top.style = 'tee'; if (s.me.look.acc && s.me.look.acc.hat === 'lazo') s.me.look.acc.hat = 'none'; }
       // completar récords nuevos si se agregan juegos
       const def = G.defaultRecords();
+      s.records.stats = s.records.stats || def.stats;
       Object.keys(def.games).forEach(g => { s.records.games[g] = s.records.games[g] || def.games[g]; s.records.best[g] = s.records.best[g] || def.best[g]; });
     } catch (e) { console.warn('No se pudo leer el guardado', e); }
   };
@@ -82,6 +89,11 @@
   };
 
   /* ---------- récords (siempre guardados) ---------- */
+  G.addSalsaErr = function (e) {
+    const r = G.state.records; r.stats = r.stats || {}; r.stats.salsaErr = r.stats.salsaErr || { dani: 0, sebas: 0 };
+    ['dani', 'sebas'].forEach(k => { r.stats.salsaErr[k] = (r.stats.salsaErr[k] || 0) + (e && e[k] || 0); });
+    G.save();
+  };
   G.recordWin = function (game, winnerId, bestScore) {
     const s = G.state, r = s.records;
     if (!r.games[game]) { r.games[game] = { dani: 0, sebas: 0 }; r.best[game] = { dani: 0, sebas: 0 }; }

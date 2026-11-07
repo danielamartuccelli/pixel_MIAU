@@ -50,7 +50,6 @@
       const kb = this.input.keyboard;
       kb.on('keydown-LEFT', () => this.moveCol(-1)); kb.on('keydown-A', () => this.moveCol(-1)); kb.on('keydown-RIGHT', () => this.moveCol(1)); kb.on('keydown-D', () => this.moveCol(1));
       ['DOWN', 'SPACE', 'E', 'S'].forEach(k => kb.on('keydown-' + k, () => this.tryDrop(this.col)));
-      kb.on('keydown-ESC', () => this.leave());
       this.zone = this.add.zone(BX + 77, BY + 66, 154, 150).setInteractive({ useHandCursor: true }).setDepth(6);
       this.zone.on('pointermove', p => { this.col = Phaser.Math.Clamp(Math.floor((p.worldX - BX) / CELL), 0, COLS - 1); });
       this.zone.on('pointerdown', p => { this.col = Phaser.Math.Clamp(Math.floor((p.worldX - BX) / CELL), 0, COLS - 1); this.tryDrop(this.col); });
@@ -95,7 +94,7 @@
       this.add.text(342, 87, 'nunca se cierra ♾', { fontFamily: 'VT323', fontSize: '11px', color: '#9fa0d0' }).setOrigin(0.5, 0).setDepth(2);
       this.timerG = this.add.graphics().setDepth(2);
       this.msg = this.add.text(342, 124, '', { fontFamily: 'VT323', fontSize: '14px', color: '#ffffff', align: 'center', wordWrap: { width: 100 } }).setOrigin(0.5, 0).setDepth(7);
-      this.hint = this.add.text(10, 156, '← → mover\n↓ o click: soltar\nESC: al igloo', { fontFamily: 'VT323', fontSize: '12px', color: '#c9c4ff', wordWrap: { width: 104 } }).setDepth(2);
+      this.hint = this.add.text(10, 156, '← → mover\n↓ o click: soltar\nEsc: salir', { fontFamily: 'VT323', fontSize: '12px', color: '#c9c4ff', wordWrap: { width: 104 } }).setDepth(2);
       this.streakT = this.add.text(342, 146, '', { fontFamily: 'VT323', fontSize: '14px', color: '#ffb36b', align: 'center', wordWrap: { width: 100 } }).setOrigin(0.5, 0).setDepth(7);
       this.btns = [];
     }
@@ -115,7 +114,7 @@
       if (over) mg.btn(this, add, 342, 164, 96, 20, this.ready.me ? '✔ esperando…' : '↻ Revancha', this.ready.me ? 0x7fd1ae : 0xffd24a, () => { if (this.ready.me) return; this.ready.me = true; mg.send('f_ready', { r: 1, gid: this.gid }); this.drawBtns(true); this.tryStart(); }, 8, 14);
       mg.btn(this, add, 342, 188, 96, 20, '◀ Al igloo', 0xff7aa8, () => this.leave(), 8, 14);
     }
-    leave() { G.travel('igloo', { place: G.state.place }); }
+    leave() { G.state.place = 'casa_sebas'; G.travel('igloo', { place: 'casa_sebas' }); }
 
     /* ---------- flujo ---------- */
     onReady(d) {

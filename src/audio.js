@@ -40,6 +40,35 @@
       kick: [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0], snare: [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0], hat: [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0],
       clave: [1,0,0,1, 0,0,1,0, 0,0,1,0, 1,0,0,0], conga: [0,0,0,0, 1,0,1,1, 0,0,0,0, 1,0,1,1],
       bass: [0,0,0,0, 0,0,1,0, 0,0,0,0, 1,0,0,1], montuno: true, melody: true },
+    /* más ritmos (DJ del igloo y canciones de Saoco) */
+    salsaRomantica: { bpm: 90, swing: 0.04, wave: 'triangle', pad: 0.06, bassW: 'sine',
+      chords: [[57, 60, 64, 67], [53, 57, 60, 64], [62, 65, 69, 72], [55, 59, 62, 65]], roots: [45, 41, 50, 43],
+      kick: [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0], snare: [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0], hat: [1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0],
+      clave: [1,0,0,1, 0,0,1,0, 0,0,1,0, 1,0,0,0], conga: [0,0,0,0, 1,0,1,1, 0,0,0,0, 1,0,1,1],
+      bass: [0,0,0,0, 0,0,1,0, 0,0,0,0, 1,0,0,1], montuno: true, melody: true },
+    timba: { bpm: 124, swing: 0, wave: 'square', pad: 0.035, bassW: 'sine',
+      chords: [[57, 60, 64, 67], [55, 59, 62, 65], [53, 57, 60, 64], [55, 59, 62, 65]], roots: [45, 43, 41, 43],
+      kick: [1,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0], snare: [0,0,0,0, 0,0,1,0, 0,0,0,0, 0,0,1,0], hat: [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0],
+      clave: [1,0,0,1, 0,0,1,0, 0,0,1,0, 1,0,0,0], conga: [0,0,1,0, 1,0,1,1, 0,0,1,0, 1,0,1,1],
+      bass: [1,0,0,1, 0,0,1,0, 0,1,0,0, 1,0,0,1], montuno: true, melody: true, lp: 3200 },
+    electro: { bpm: 124, swing: 0, wave: 'sawtooth', pad: 0.03, bassW: 'sawtooth',
+      chords: [[57, 60, 64], [53, 57, 60], [48, 52, 55], [55, 59, 62]], roots: [33, 29, 36, 31],
+      kick: [1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0], snare: [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0], hat: [0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0],
+      bass: [0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,1], stab: [1,0,0,1, 0,0,1,0, 0,1,0,0, 1,0,0,1], melody: true, lp: 2400 },
+    latinpop: { bpm: 104, swing: 0, wave: 'triangle', pad: 0.06, bassW: 'sine',
+      chords: [[57, 60, 64], [53, 57, 60], [48, 52, 55], [55, 59, 62]], roots: [45, 41, 36, 43],
+      kick: [1,0,0,0, 0,0,0,0, 1,0,0,1, 0,0,0,0], snare: [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0], hat: [1,0,1,1, 1,0,1,0, 1,0,1,1, 1,0,1,0],
+      clave: [0,0,0,1, 0,0,1,0, 0,0,0,1, 0,0,1,0], bass: [1,0,0,1, 0,0,1,0, 1,0,0,1, 0,0,1,0], stab: [0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0], melody: true },
+    /* dojo: pentatónica mayor (sonido chino/oriental), cuerdas pulsadas, tambor taiko y gong */
+    oriental: { bpm: 90, swing: 0, wave: 'triangle', pad: 0.04, bassW: 'sine', scale: [0, 2, 4, 7, 9, 12, 14, 16], pluck: [1,0,0,1, 0,0,1,0, 1,0,0,0, 1,0,1,0], gong: true,
+      chords: [[57, 64, 69], [55, 62, 67], [52, 59, 64], [55, 62, 67]], roots: [45, 43, 40, 43],
+      kick: [1,0,0,0, 0,0,0,0, 0,0,1,0, 0,0,0,0], snare: [0,0,0,0, 0,0,0,0, 0,0,0,0, 1,0,0,0], hat: [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0],
+      clave: [0,0,1,0, 0,0,0,0, 0,0,1,0, 0,0,0,0], bass: [1,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0], melody: true },
+    /* cocina de Daniela: ¡acelerada! */
+    rapido: { bpm: 152, swing: 0, wave: 'square', pad: 0.03, bassW: 'sawtooth', mel: 0.8,
+      chords: [[57, 60, 64], [53, 57, 60], [48, 52, 55], [55, 59, 62]], roots: [45, 41, 36, 43],
+      kick: [1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,1], snare: [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,1,0], hat: [1,0,1,1, 1,0,1,1, 1,0,1,1, 1,0,1,1],
+      clave: [0,0,0,1, 0,0,1,0, 0,0,0,1, 0,0,1,0], bass: [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,1], stab: [0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0], melody: true },
     /* canciones del baile de Saoco: fácil = habanera (lenta), normal = salsa, difícil = charanga (rápida) */
     habanera: { bpm: 88, swing: 0.06, wave: 'triangle', pad: 0.05, bassW: 'sine',
       chords: [[57, 60, 64], [53, 57, 60], [55, 59, 62], [57, 60, 64]], roots: [45, 41, 43, 45],
@@ -99,8 +128,10 @@
       else tone(t, mtof(root), 0.28, S.bassW, S.bassW === 'sawtooth' ? 0.12 : 0.32, 700);
     }
     if (S.montuno && k % 2 === 0) { const m = ch[(k / 2) % ch.length] + 12; tone(t, mtof(m), 0.16, 'triangle', 0.09, 3000); }
-    if (S.melody && (k === 0 || k === 6 || k === 10 || k === 14) && Math.random() < 0.55) {
-      const m = root + 24 + SCALE[Math.floor(Math.random() * SCALE.length)];
+    if (S.gong && k === 0 && bar % 2 === 0) { tone(t, 98, 1.6, 'sine', 0.14, 900, 0.01); tone(t, 147, 1.2, 'sine', 0.06, 1200, 0.01); }
+    if (S.pluck && S.pluck[k]) { const sc = S.scale || SCALE, m = root + 36 + sc[(bar * 3 + k) % sc.length]; tone(t, mtof(m), 0.22, 'sawtooth', 0.035, 1800, 0.004); if (k % 8 === 0) tone(t, mtof(m + 12), 0.3, 'sine', 0.04, 3000, 0.004); }
+    if (S.melody && (k === 0 || k === 6 || k === 10 || k === 14) && Math.random() < (S.mel || 0.55)) {
+      const sc = S.scale || SCALE, m = root + 24 + sc[Math.floor(Math.random() * sc.length)];
       tone(t, mtof(m), 0.35, S.wave === 'sawtooth' ? 'triangle' : 'sine', 0.07, 2200, 0.02);
     }
   }
@@ -110,7 +141,7 @@
     nextT = ctx.currentTime + 0.1; step = 0;
     timer = setInterval(() => {
       if (!ctx) return;
-      const S = STYLES[style] || STYLES.lofi, dt = 60 / S.bpm / 4, on = G.state.settings.music && !(G.local && G.slot === 1);   // misma laptop: solo suena la música de una copia
+      const S = STYLES[style] || STYLES.lofi, dt = 60 / S.bpm / 4, on = G.state.settings.music;   // misma laptop: solo suena la música de una copia
       // el reloj avanza aunque la música esté apagada (los juegos de ritmo dependen de él); solo se oye si está encendida
       while (nextT < ctx.currentTime + 0.25) { if (on) { try { playStep(S, step, nextT); } catch (e) { console.warn('audio', e); } } nextT += dt; step++; }
     }, 40);
@@ -118,7 +149,7 @@
 
   function applyVol() {
     if (!master) return;
-    const on = G.state.settings.music && !(G.local && G.slot === 1), v = on ? G.state.settings.vol * 0.55 : 0;
+    const on = G.state.settings.music, v = on ? G.state.settings.vol * 0.55 : 0;
     master.gain.cancelScheduledValues(ctx.currentTime); master.gain.setTargetAtTime(v, ctx.currentTime, 0.15);
   }
 
@@ -140,6 +171,7 @@
       const t = ctx.currentTime;
       if (kind === 'click') tone(t, 660, 0.06, 'square', 0.05, 3000);
       else if (kind === 'ok') { tone(t, 523, 0.08, 'square', 0.05, 3000); tone(t + 0.08, 784, 0.12, 'square', 0.05, 3000); }
+      else if (kind === 'coin') { tone(t, 988, 0.06, 'square', 0.05, 3000); tone(t + 0.06, 1318, 0.12, 'square', 0.05, 3000); }
       else if (kind === 'pop') sweep(t, 400, 900, 0.1, 0.08, 'sine');
       else if (kind === 'hit') { sweep(t, 320, 80, 0.2, 0.1, 'square'); }
       else if (kind === 'win') { [523, 659, 784, 1046].forEach((f, i) => tone(t + i * 0.1, f, 0.16, 'triangle', 0.08)); }

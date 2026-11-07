@@ -61,12 +61,33 @@
       g.fillStyle(0x2b1b30).fillRect(0, 0, 16, 16).fillStyle(0xfff3d6).fillRect(1, 1, 14, 14);
       g.fillStyle(0x4aa6ff).fillRect(1, 1, 14, 6).fillStyle(0xffd24a).fillCircle(11, 4, 2).fillStyle(0x3aa05a).fillRect(1, 9, 14, 6).fillStyle(0xe63946).fillRect(4, 6, 3, 4);
     });
-    gfxTex(scene, 'k_ground', 32, 24, g => {
+    gfxTex(scene, 'k_ground', 32, 24, g => {     // pasto + vereda de ladrillo (como las del Parque Kennedy)
       g.fillStyle(0x8fd694).fillRect(0, 0, 32, 6).fillStyle(0x6fbf6a).fillRect(0, 5, 32, 1);
       [3, 9, 17, 25].forEach((x, i) => g.fillStyle(0x6fbf6a).fillRect(x, 1 + (i % 2), 1, 3));
-      g.fillStyle(0xe8d7b0).fillRect(0, 6, 32, 18).fillStyle(0xcdb98a).fillRect(0, 6, 32, 1);
-      g.fillStyle(0xd4c196).fillRect(4, 12, 10, 1).fillRect(20, 16, 9, 1).fillRect(10, 20, 8, 1).fillStyle(0xf3e8c8).fillRect(18, 10, 6, 1);
+      g.fillStyle(0xc8704a).fillRect(0, 6, 32, 18).fillStyle(0x9a4a30).fillRect(0, 6, 32, 1);
+      for (let y = 9; y < 24; y += 5) { g.fillStyle(0x9a4a30).fillRect(0, y, 32, 1); const o = (y / 5 | 0) % 2 ? 0 : 8; [o, o + 16].forEach(x => g.fillRect(x, y - 4, 1, 4)); }
+      g.fillStyle(0xdc8a62).fillRect(3, 7, 5, 1).fillRect(20, 12, 6, 1).fillRect(10, 17, 5, 1);
     });
+    gfxTex(scene, 'k_olive', 40, 48, g => {      // olivo (el Parque Kennedy está lleno)
+      g.fillStyle(0x5a4a3a).fillRect(16, 26, 6, 22).fillRect(13, 34, 4, 6).fillRect(22, 30, 5, 4);
+      g.fillStyle(0x6f8f5a).fillCircle(20, 18, 15).fillCircle(9, 24, 9).fillCircle(31, 24, 9);
+      g.fillStyle(0x8fae74).fillCircle(16, 14, 9).fillCircle(26, 18, 7).fillStyle(0xb7cf98, 0.8).fillCircle(13, 11, 3);
+      g.fillStyle(0x3d4a2a).fillRect(10, 20, 2, 2).fillRect(27, 15, 2, 2).fillRect(20, 26, 2, 2);
+    });
+    gfxTex(scene, 'k_pond', 52, 16, g => {       // estanque con patitos
+      g.fillStyle(0xb09a74).fillEllipse(26, 11, 52, 12).fillStyle(0x6fc3e8).fillEllipse(26, 10, 46, 9).fillStyle(0xbfeaff, 0.8).fillRect(10, 8, 8, 1).fillRect(30, 11, 10, 1);
+      g.fillStyle(0xffd24a).fillCircle(36, 8, 2).fillRect(37, 7, 3, 1).fillStyle(0xffffff).fillCircle(18, 9, 2);
+    });
+    if (!scene.textures.exists('k_manolos')) {   // tienda de churros "Manolo's"
+      const tx = scene.textures.createCanvas('k_manolos', 64, 52), c = tx.getContext();
+      c.fillStyle = '#7a4a2a'; c.fillRect(4, 18, 56, 34); c.fillStyle = '#f3d9a0'; c.fillRect(8, 24, 48, 28); c.fillStyle = '#2b1b30'; c.fillRect(8, 24, 48, 2);
+      for (let i = 0; i < 8; i++) { c.fillStyle = i % 2 ? '#ffffff' : '#e63946'; c.fillRect(2 + i * 7.5, 12, 7.5, 9); }
+      c.fillStyle = '#2b1b30'; c.fillRect(0, 10, 64, 2); c.fillRect(6, 3, 52, 9); c.fillStyle = '#ffd24a'; c.fillRect(7, 4, 50, 7);
+      c.fillStyle = '#2b1b30'; c.font = 'bold 8px monospace'; c.textAlign = 'center'; c.fillText("MANOLO'S", 32, 10);
+      c.fillStyle = '#c8702a'; for (let i = 0; i < 5; i++) { c.fillRect(13 + i * 8, 30, 3, 14); c.fillStyle = '#e0953a'; c.fillRect(13 + i * 8, 30, 1, 14); c.fillStyle = '#c8702a'; }
+      c.fillStyle = '#2b1b30'; c.fillRect(10, 46, 44, 2); c.fillStyle = '#ffffff'; c.fillRect(24, 50, 16, 2);
+      tx.refresh();
+    }
     gfxTex(scene, 'k_tree', 34, 52, g => {     // ficus del parque
       g.fillStyle(0x6b4a3a).fillRect(15, 30, 5, 22); g.fillStyle(0x2f7a46).fillCircle(17, 20, 15).fillCircle(8, 26, 9).fillCircle(26, 26, 9);
       g.fillStyle(0x3aa05a).fillCircle(14, 16, 10).fillCircle(24, 20, 8).fillStyle(0x6fd18a, 0.7).fillCircle(11, 12, 4);
@@ -123,7 +144,7 @@
     while (x < 60000) {
       let k;
       if (far) { k = (list.length % 11 === 5) ? 'church' : 'bld' + Math.floor(r() * 3); x += k === 'church' ? 90 : 36 + r() * 60; list.push({ x, k }); x += k === 'church' ? 60 : 0; }
-      else { const q = r(); k = q < 0.34 ? 'tree' : q < 0.58 ? 'tent' : q < 0.78 ? 'lamp' : 'bench'; list.push({ x, k }); x += 70 + r() * 110; }
+      else { const q = r(); k = q < 0.22 ? 'tree' : q < 0.44 ? 'olive' : q < 0.58 ? 'tent' : q < 0.68 ? 'pond' : q < 0.76 ? 'manolos' : q < 0.88 ? 'lamp' : 'bench'; list.push({ x, k }); x += 70 + r() * 110; }
     }
     return list;
   }
@@ -160,7 +181,7 @@
       this.gnd = scene.add.tileSprite(0, this.ground, W, 24, 'k_ground').setOrigin(0, 0).setDepth(2);
       // sombra + corredor
       this.shadow = scene.add.ellipse(RX, this.ground + 3, 16, 4, 0x000000, 0.25).setDepth(5);
-      this.puf = scene.add.image(RX - 16, this.ground, 'puf_' + who).setOrigin(0.5, 1).setDepth(6);
+      this.puf = scene.add.image(RX - 16, this.ground, 'puf_' + who).setOrigin(0.5, 1).setDepth(6).setVisible(false);
       this.spr = scene.add.sprite(RX, this.ground, 'char_' + who, 'l0').setOrigin(0.5, 1).setFlipX(true).setDepth(7);
       this.name = A.text(scene, 6, this.top + 3, '', 11, '#ffffff').setOrigin(0, 0).setDepth(30);
       this.pops = [];
@@ -239,7 +260,6 @@
       this.input.keyboard.on('keydown-UP', jump); this.input.keyboard.on('keydown-W', jump); this.input.keyboard.on('keydown-SPACE', jump);
       this.input.on('pointerdown', () => { if (this.phase === 'play') { this.jumpBuf = 0.14; this.ptr = true; } });
       this.input.on('pointerup', () => { this.ptr = false; });
-      this.input.keyboard.on('keydown-ESC', () => { if (this.phase !== 'play') G.flow.openMap(); });
       const net = G.net;
       this.nets = [
         ['k_dur', d => { this.dur = d.dur; this.drawLobby(); }], ['k_ready', d => { this.ready.partner = !!d.r; this.drawLobby(); this.tryStart(); }],
@@ -276,19 +296,19 @@
       this.ui.forEach(o => o.destroy()); this.ui = []; if (this.phase !== 'lobby') return;
       const add = o => { this.ui.push(o); return o; }, D = 100;
       const pg = add(this.add.graphics().setDepth(D)); pg.fillStyle(0x2b1b30, 1).fillRoundedRect(40, 28, 320, 168, 8).lineStyle(2, 0xffd24a).strokeRoundedRect(40, 28, 320, 168, 8);
-      add(A.text(this, 200, 44, '🐈 CARRERA DE GATOS', 17, '#ffd24a').setDepth(D + 1));
-      add(this.add.text(200, 60, 'Salta gatos y cuadros de la feria, agáchate ante las palomas, junta pescaditos y bubble tea. Chocar te hace tropezar. ¡Gana quien más metros haga!', { fontFamily: 'VT323', fontSize: '11px', color: '#fff3d6', align: 'center', lineSpacing: -2, wordWrap: { width: 296 } }).setOrigin(0.5, 0).setDepth(D + 1));
-      add(this.add.text(200, 92, '↑ / W / Espacio / click = saltar     ↓ / S = agacharse', { fontFamily: 'VT323', fontSize: '12px', color: '#9fe0cf' }).setOrigin(0.5, 0).setDepth(D + 1));
-      add(this.add.text(200, 108, 'Duración de la carrera:', { fontFamily: 'VT323', fontSize: '12px', color: '#ffffff' }).setOrigin(0.5, 0).setDepth(D + 1));
+      add(A.text(this, 200, 44, '🐈 CARRERA DE GATOS · PARQUE KENNEDY', 14, '#ffd24a').setDepth(D + 1));
+      add(this.add.text(200, 60, 'Corren a la vez (tú: carril de abajo). SALTA gatos y cuadros, AGÁCHATE ante las palomas, junta pescaditos (turbo) y bubble tea. Si chocas, tropiezas. ¡Gana quien llegue más lejos!', { fontFamily: 'VT323', fontSize: '11px', color: '#fff3d6', align: 'center', lineSpacing: -2, wordWrap: { width: 300 } }).setOrigin(0.5, 0).setDepth(D + 1));
+      add(this.add.text(200, 100, '↑ / W / Espacio / click = saltar     ↓ / S = agacharse', { fontFamily: 'VT323', fontSize: '12px', color: '#9fe0cf' }).setOrigin(0.5, 0).setDepth(D + 1));
+      add(this.add.text(200, 114, 'Duración de la carrera:', { fontFamily: 'VT323', fontSize: '12px', color: '#ffffff' }).setOrigin(0.5, 0).setDepth(D + 1));
       const opts = [[120, '2 min'], [180, '3 min'], [300, '5 min']];
       if (Q.get('kdur')) opts.unshift([+Q.get('kdur'), Q.get('kdur') + ' s']);
       opts.forEach(([v, lb], i) => {
-        const x = 200 + (i - (opts.length - 1) / 2) * 76; this.btn(add, x, 132, 68, 20, lb, this.dur === v ? 0xffd24a : 0xbfeaff, () => { this.dur = v; this.send('k_dur', { dur: v }); this.drawLobby(); }, D);
+        const x = 200 + (i - (opts.length - 1) / 2) * 76; this.btn(add, x, 138, 68, 18, lb, this.dur === v ? 0xffd24a : 0xbfeaff, () => { this.dur = v; this.send('k_dur', { dur: v }); this.drawLobby(); }, D);
       });
       const me = G.state.me.name || 'Tú', pn = G.state.partner.name || 'Pareja';
-      this.btn(add, 140, 168, 110, 22, this.ready.me ? '✔ ¡Listo!' : '¡Estoy listo!', this.ready.me ? 0x7fd1ae : 0xff7aa8, () => { this.ready.me = !this.ready.me; this.send('k_ready', { r: this.ready.me }); this.drawLobby(); this.tryStart(); }, D);
-      add(this.add.text(222, 160, (G.solo ? pn + ' (bot) 🤖: listo' : pn + (this.ready.partner ? ': ✔ listo' : ': esperando…')) + '\n' + me + (this.ready.me ? ': ✔ listo' : ''), { fontFamily: 'VT323', fontSize: '12px', color: '#fff3d6', lineSpacing: -1 }).setOrigin(0, 0).setDepth(D + 1));
-      this.btn(add, 328, 38, 56, 14, '◀ Mapa', 0xffffff, () => G.flow.openMap(), D, 10);
+      this.btn(add, 140, 172, 110, 20, this.ready.me ? '✔ ¡Listo!' : '¡Estoy listo!', this.ready.me ? 0x7fd1ae : 0xff7aa8, () => { this.ready.me = !this.ready.me; this.send('k_ready', { r: this.ready.me }); this.drawLobby(); this.tryStart(); }, D);
+      add(this.add.text(222, 164, (G.solo ? pn + ' (bot) 🤖: listo' : pn + (this.ready.partner ? ': ✔ listo' : ': esperando…')) + '\n' + me + (this.ready.me ? ': ✔ listo' : ''), { fontFamily: 'VT323', fontSize: '12px', color: '#fff3d6', lineSpacing: -1 }).setOrigin(0, 0).setDepth(D + 1));
+      this.btn(add, 328, 172, 62, 18, '◀ Igloo', 0xffffff, () => G.flow.home(), D, 12);
     }
     btn(add, x, y, w, h, label, color, fn, depth, fs) {
       const g = add(this.add.graphics().setDepth(depth + 1)); g.fillStyle(0x2b1b30).fillRoundedRect(x - w / 2 + 1, y - h / 2 + 3, w, h, 4).fillStyle(color).fillRoundedRect(x - w / 2, y - h / 2, w, h, 4).lineStyle(1.5, 0x2b1b30).strokeRoundedRect(x - w / 2, y - h / 2, w, h, 4);
@@ -399,7 +419,7 @@
       this.add.text(200, 140, 'Récord: ' + (G.state.me.name || 'Tú') + ' ' + (rec[myId] || 0) + ' m · ' + (G.state.partner.name || 'Pareja') + ' ' + (rec[paId] || 0) + ' m', { fontFamily: 'VT323', fontSize: '12px', color: '#c9b8ff' }).setOrigin(0.5).setDepth(D + 1);
       const add = o => o;
       this.btn(add, 150, 172, 92, 22, '↻ Revancha', 0xffd24a, () => { this.send('k_again', {}); this.scene.restart(); }, D);
-      this.btn(add, 250, 172, 92, 22, '◀ Al mapa', 0xff7aa8, () => G.flow.openMap(), D);
+      this.btn(add, 250, 172, 92, 22, '◀ Al igloo', 0xff7aa8, () => G.flow.home(), D);
       if (winnerId) for (let i = 0; i < 16; i++) { const h = this.add.graphics().setDepth(D + 0.5); A.heart(h, 0, 0, 3 + (i % 3), [0xff5d97, 0xffd24a, 0x7fd1ae, 0xb07cff][i % 4]); h.x = 70 + Math.random() * 260; h.y = 20; this.tweens.add({ targets: h, y: 215, x: h.x + (Math.random() * 40 - 20), alpha: { from: 1, to: 0.2 }, duration: 1800 + Math.random() * 1400, delay: i * 90, repeat: -1 }); }
     }
   }
